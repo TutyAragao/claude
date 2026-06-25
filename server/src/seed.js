@@ -1,6 +1,7 @@
 // Popula o banco com dados de demonstração: 1 organizador, jogadores,
 // uma temporada com tabela de pontuação padrão, alguns torneios e resultados.
 // Idempotente o suficiente para desenvolvimento: zera as tabelas antes.
+import { pathToFileURL } from 'node:url';
 import db from './db.js';
 import { hashPassword } from './auth.js';
 import { DEFAULT_SCORING, pointsFor } from './scoring.js';
@@ -18,7 +19,7 @@ function reset() {
   `);
 }
 
-function seed() {
+export function seed() {
   reset();
 
   const insPlayer = db.prepare(
@@ -122,4 +123,7 @@ function seed() {
   console.log(`  Jogador:     arthur@riverclub.gg / ${PASSWORD}`);
 }
 
-seed();
+// Auto-executa apenas quando chamado diretamente (npm run seed).
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  seed();
+}

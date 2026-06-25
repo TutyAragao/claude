@@ -1,0 +1,41 @@
+# River Club — orquestração local/produção.
+#
+# Por padrão a aplicação roda com SQLite num volume persistente (simples e
+# suficiente para a escala de um home game). O serviço `db` (PostgreSQL) já vem
+# incluído e pronto para a migração futura — ver docs/POSTGRES.md.
+
+services:
+  app:
+    build: .
+    ports:
+      - '4000:4000'
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:-troque-em-producao}
+      DB_PATH: /data/river-club.db
+      SEED_ON_START: 'true'
+      # Para usar Postgres no futuro, descomente e ajuste o adaptador:
+      # DATABASE_URL: postgres://river:river@db:5432/riverclub
+    volumes:
+      - app-data:/data
+    restart: unless-stopped
+    # depends_on:
+    #   - db
+
+  # PostgreSQL pronto para a migração (ainda não utilizado pela aplicação).
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: river
+      POSTGRES_PASSWORD: river
+      POSTGRES_DB: riverclub
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    profiles:
+      - postgres # sobe só com:  docker compose --profile postgres up
+
+volumes:
+  app-data:
+  pg-data:

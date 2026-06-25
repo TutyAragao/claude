@@ -53,6 +53,18 @@ externa e o schema (`server/src/schema.sql`) foi escrito de forma portável.
 Para migrar a Postgres em produção (como sugere a spec), veja
 [`docs/POSTGRES.md`](docs/POSTGRES.md).
 
+## Deploy
+
+A aplicação empacota API + frontend num **único serviço** (o Express serve o
+SPA em produção). Caminho mais rápido:
+
+```bash
+docker compose up --build      # http://localhost:4000 (SQLite em volume + seed)
+```
+
+Há também um `render.yaml` para deploy 1-clique no Render (com disco
+persistente). Detalhes e a opção PostgreSQL em [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
 ## Como rodar
 
 Pré-requisitos: Node 18+.

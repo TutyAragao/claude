@@ -1,0 +1,21 @@
+# Blueprint de deploy no Render (https://render.com).
+# Cria um serviço web a partir do Dockerfile, com disco persistente para o SQLite.
+# Importe este repositório no Render e ele lê este arquivo automaticamente.
+services:
+  - type: web
+    name: river-club
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_PATH
+        value: /data/river-club.db
+      - key: SEED_ON_START
+        value: 'true'
+    disk:
+      name: river-data
+      mountPath: /data
+      sizeGB: 1

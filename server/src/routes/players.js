@@ -63,6 +63,10 @@ const ALL_THEMES = [...FREE_THEMES, ...VIP_THEMES];
 // Atualiza o próprio perfil
 router.put('/me', requireAuth, (req, res) => {
   const body = req.body || {};
+  // Limite de segurança para a foto enviada (data URL ~ até ~300KB).
+  if (typeof body.avatar_url === 'string' && body.avatar_url.length > 400000) {
+    return res.status(413).json({ error: 'Imagem muito grande. Tente uma menor.' });
+  }
   const fields = [];
   const values = [];
   for (const key of EDITABLE) {

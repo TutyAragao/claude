@@ -5,6 +5,7 @@ import { api } from '../api.js';
 import PlayerCard from '../components/PlayerCard.jsx';
 import StatTile from '../components/StatTile.jsx';
 import Skeleton from '../components/Skeleton.jsx';
+import PointsChart from '../components/PointsChart.jsx';
 import { money, roiText, dateText, chips } from '../format.js';
 
 export default function Home() {
@@ -100,6 +101,8 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      <PointsChart history={history} />
 
       {history?.length > 0 && (
         <section>

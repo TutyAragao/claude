@@ -7,6 +7,7 @@ import StatTile from '../components/StatTile.jsx';
 import Avatar from '../components/Avatar.jsx';
 import FriendButton from '../components/FriendButton.jsx';
 import Skeleton from '../components/Skeleton.jsx';
+import PointsChart from '../components/PointsChart.jsx';
 import { money, roiText, dateText, chips } from '../format.js';
 
 export default function PlayerProfile() {
@@ -94,6 +95,8 @@ export default function PlayerProfile() {
           )}
         </div>
       </div>
+
+      <PointsChart history={history} />
 
       {history?.length > 0 && (
         <section>

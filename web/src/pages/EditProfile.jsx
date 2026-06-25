@@ -24,9 +24,32 @@ export default function EditProfile() {
     avatar_url: player.avatar_url || '',
   });
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Lê a foto escolhida, redimensiona para 256px e guarda como imagem otimizada.
+  async function onPickFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('Selecione um arquivo de imagem.');
+      return;
+    }
+    setError('');
+    setUploading(true);
+    try {
+      const dataUrl = await resizeImage(file, 256);
+      // foto enviada tem prioridade sobre o avatar-personagem
+      setForm((f) => ({ ...f, avatar_url: dataUrl, avatar: '' }));
+    } catch {
+      setError('Não foi possível processar a imagem.');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   // Preview de tema ao vivo; reverte ao tema salvo se sair sem salvar.
   function previewTheme(key) {
@@ -108,13 +131,38 @@ export default function EditProfile() {
           )}
         </Field>
 
-        <Field label="…ou cole a URL de uma imagem (tem prioridade)">
-          <input
-            className="input"
-            placeholder="https://…"
-            value={form.avatar_url}
-            onChange={(e) => set('avatar_url', e.target.value)}
-          />
+        <Field label="…ou envie a sua foto (tem prioridade)">
+          <div className="flex items-center gap-3">
+            <label className="btn-ghost text-sm cursor-pointer">
+              {uploading ? 'Processando…' : '📷 Enviar foto'}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={onPickFile}
+                disabled={uploading}
+              />
+            </label>
+            {form.avatar_url && (
+              <>
+                <img
+                  src={form.avatar_url}
+                  alt="avatar"
+                  className="w-10 h-10 rounded-lg object-cover border border-white/10"
+                />
+                <button
+                  type="button"
+                  className="text-sm text-red-300 hover:text-red-200"
+                  onClick={() => set('avatar_url', '')}
+                >
+                  Remover
+                </button>
+              </>
+            )}
+          </div>
+          <p className="text-xs text-zinc-500 mt-1.5">
+            A imagem é redimensionada para 256px e otimizada automaticamente.
+          </p>
         </Field>
 
         <Field label="Naipe favorito">
@@ -221,4 +269,30 @@ function Field({ label, children }) {
       {children}
     </div>
   );
+}
+
+// Redimensiona uma imagem para caber em `max`px (lado maior) e devolve um
+// data URL JPEG otimizado — pequeno o bastante para guardar no perfil.
+function resizeImage(file, max) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }

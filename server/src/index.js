@@ -10,6 +10,7 @@ import rankingRoutes from './routes/ranking.js';
 import adminRoutes from './routes/admin.js';
 import friendRoutes from './routes/friends.js';
 import activityRoutes from './routes/activities.js';
+import notificationRoutes from './routes/notifications.js';
 
 const app = express();
 app.use(cors());
@@ -25,6 +26,7 @@ app.use('/api/ranking', rankingRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // 404 para API
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Rota não encontrada' }));

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../auth.js';
 import { friendsOf, relationship, incomingRequests } from '../social.js';
+import { notify } from '../notifications.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -40,12 +41,15 @@ router.post('/request/:id', (req, res) => {
       `UPDATE friendships SET status = 'accepted', responded_at = datetime('now')
         WHERE requester_id = ? AND addressee_id = ?`
     ).run(otherId, req.user.id);
+    // o outro havia pedido; avisa que foi aceito
+    notify(otherId, { type: 'friend_accept', actorId: req.user.id });
     return res.json({ status: 'friends' });
   }
 
   db.prepare(
     'INSERT INTO friendships (requester_id, addressee_id, status) VALUES (?, ?, \'pending\')'
   ).run(req.user.id, otherId);
+  notify(otherId, { type: 'friend_request', actorId: req.user.id });
   res.status(201).json({ status: 'outgoing' });
 });
 
@@ -65,6 +69,8 @@ router.post('/respond/:id', (req, res) => {
     db.prepare(
       `UPDATE friendships SET status = 'accepted', responded_at = datetime('now') WHERE id = ?`
     ).run(pending.id);
+    // avisa quem fez o pedido que foi aceito
+    notify(otherId, { type: 'friend_accept', actorId: req.user.id });
     return res.json({ status: 'friends' });
   }
   // recusar

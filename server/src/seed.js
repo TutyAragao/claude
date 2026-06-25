@@ -107,6 +107,13 @@ function seed() {
   insFriend.run(D, A, 'pending', null); // Daniela -> Arthur (pedido pendente p/ Arthur)
   insFriend.run(E, A, 'pending', null); // Eduardo -> Arthur (pedido pendente p/ Arthur)
 
+  // Notificações de demonstração (pedidos de amizade pendentes do Arthur).
+  const insNotif = db.prepare(
+    `INSERT INTO notifications (user_id, type, actor_id) VALUES (?, 'friend_request', ?)`
+  );
+  insNotif.run(A, D);
+  insNotif.run(A, E);
+
   console.log('✓ Seed concluído.');
   console.log(`  Organizador: admin@riverclub.gg / ${PASSWORD}`);
   console.log(`  Jogador:     arthur@riverclub.gg / ${PASSWORD}`);

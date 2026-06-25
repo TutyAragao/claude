@@ -30,6 +30,9 @@ Esta entrega cobre as **Fases 1 e 2** do roadmap da especificação:
   - **Feed de atividades:** quem ganhou, novos recordes (maior prêmio/pontos do
     clube, primeira vitória) e novas amizades. Derivado dos dados (sem tabela de
     eventos), com filtro Tudo / Amigos. Ver `server/src/feed.js`.
+  - **Notificações in-app:** sino no topo com contagem de não lidas. Avisa quando
+    você recebe um pedido de amizade, quando ele é aceito e quando você é
+    **promovido da lista de espera** de um torneio.
 
 ## Stack
 

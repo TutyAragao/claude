@@ -3,6 +3,7 @@ import db from '../db.js';
 import { requireAuth, requireOrganizer, optionalAuth } from '../auth.js';
 import { publicPlayer } from '../stats.js';
 import { SEATS_PER_TABLE, SEATS_MIN, SEATS_MAX, tablesFor } from '../config.js';
+import { notify } from '../notifications.js';
 
 const router = Router();
 
@@ -195,14 +196,25 @@ router.post('/:id/register', requireAuth, (req, res) => {
 });
 
 // Cancela a inscrição. Promove automaticamente o primeiro da lista de espera
-// (a promoção é implícita: o status é recalculado pela ordem na próxima leitura).
+// (a promoção é implícita: o status é recalculado pela ordem na próxima leitura)
+// e notifica quem subiu da espera para confirmado.
 router.delete('/:id/register', requireAuth, (req, res) => {
   const t = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(req.params.id);
   if (!t) return res.status(404).json({ error: 'Torneio não encontrado' });
+
+  const before = new Set(buildRoster(t.id, t.seats).confirmed.map((p) => p.id));
   db.prepare(
     'DELETE FROM registrations WHERE tournament_id = ? AND player_id = ?'
   ).run(req.params.id, req.user.id);
   const roster = buildRoster(t.id, t.seats);
+
+  // Quem está confirmado agora e não estava antes foi promovido da espera.
+  for (const p of roster.confirmed) {
+    if (!before.has(p.id)) {
+      notify(p.id, { type: 'waitlist_promoted', tournamentId: t.id });
+    }
+  }
+
   res.json({ ok: true, roster });
 });
 

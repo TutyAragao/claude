@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import NotificationsBell from './NotificationsBell.jsx';
 
 const links = [
   { to: '/', label: 'Início', end: true },
@@ -32,6 +33,7 @@ export default function Layout({ children }) {
           <div className="flex items-center gap-2">
             {player ? (
               <>
+                <NotificationsBell />
                 <NavLink
                   to={`/jogador/${player.id}`}
                   className="hidden sm:block text-sm text-zinc-300 hover:text-white"

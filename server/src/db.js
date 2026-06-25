@@ -17,4 +17,16 @@ db.pragma('foreign_keys = ON');
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 db.exec(schema);
 
+// Migrações leves: adiciona colunas novas em bancos já existentes.
+// (CREATE TABLE IF NOT EXISTS não altera tabelas pré-existentes.)
+function ensureColumn(table, column, ddl) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+  }
+}
+ensureColumn('players', 'vip', 'vip INTEGER NOT NULL DEFAULT 0');
+ensureColumn('tournaments', 'vip_opens_at', 'vip_opens_at TEXT');
+ensureColumn('tournaments', 'opens_at', 'opens_at TEXT');
+
 export default db;

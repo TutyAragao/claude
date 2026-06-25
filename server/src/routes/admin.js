@@ -47,8 +47,14 @@ router.post('/players', (req, res) => {
   const exists = db.prepare('SELECT 1 FROM players WHERE email = ?').get(email.toLowerCase());
   if (exists) return res.status(409).json({ error: 'E-mail já cadastrado' });
   const info = db
-    .prepare(`INSERT INTO players (email, password_hash, name, role) VALUES (?, ?, ?, ?)`)
-    .run(email.toLowerCase(), hashPassword(password), name.trim(), role === 'organizer' ? 'organizer' : 'player');
+    .prepare(`INSERT INTO players (email, password_hash, name, role, vip) VALUES (?, ?, ?, ?, ?)`)
+    .run(
+      email.toLowerCase(),
+      hashPassword(password),
+      name.trim(),
+      role === 'organizer' ? 'organizer' : 'player',
+      req.body.vip ? 1 : 0
+    );
   const row = db.prepare('SELECT * FROM players WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json(publicPlayer(row));
 });
@@ -64,6 +70,7 @@ router.put('/players/:id', (req, res) => {
     if (key in b) { fields.push(`${key} = ?`); values.push(b[key]); }
   }
   if ('active' in b) { fields.push('active = ?'); values.push(b.active ? 1 : 0); }
+  if ('vip' in b) { fields.push('vip = ?'); values.push(b.vip ? 1 : 0); }
   if (b.password) { fields.push('password_hash = ?'); values.push(hashPassword(b.password)); }
   if (!fields.length) return res.status(400).json({ error: 'Nada para atualizar' });
   values.push(req.params.id);

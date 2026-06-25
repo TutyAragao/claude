@@ -4,20 +4,26 @@ import { api } from '../api.js';
 import Suit from './Suit.jsx';
 import { money, dateTimeText } from '../format.js';
 
-// Painel completo do próximo torneio: dados, vagas, inscrição com lista de
-// espera e roster (confirmados + fila), destacando o jogador logado.
+// Painel completo do próximo torneio: dados, vagas (mesas de 9), janela de
+// inscrição com acesso antecipado VIP, inscrição com lista de espera e roster
+// agrupado por mesa, destacando o jogador logado.
 export default function NextTournament({ tournament }) {
   const { player } = useAuth();
   const [roster, setRoster] = useState(null);
+  const [reg, setReg] = useState(null); // janela de inscrição
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
 
   function load() {
-    api.get(`/tournaments/${tournament.id}`).then((d) => setRoster(d.roster));
+    api.get(`/tournaments/${tournament.id}`).then((d) => {
+      setRoster(d.roster);
+      setReg(d.registration);
+    });
   }
   useEffect(load, [tournament.id]);
 
   const me = player && roster ? statusOf(roster, player.id) : { status: 'none' };
+  const canRegister = reg?.canRegister;
 
   async function register() {
     setBusy(true);
@@ -73,21 +79,31 @@ export default function NextTournament({ tournament }) {
             <div className="shrink-0 text-right">
               <SeatBadge roster={roster} />
               <div className="mt-2">
-                {me.status === 'none' ? (
-                  <button className="btn-primary" disabled={busy} onClick={register}>
-                    {roster.isFull ? 'Entrar na lista de espera' : 'Inscrever-se'}
-                  </button>
-                ) : (
+                {me.status !== 'none' ? (
                   <button className="btn-ghost" disabled={busy} onClick={cancel}>
                     {me.status === 'waitlist'
                       ? `Sair da espera (${me.queue}º)`
                       : 'Cancelar inscrição'}
+                  </button>
+                ) : canRegister ? (
+                  <button className="btn-primary" disabled={busy} onClick={register}>
+                    {roster.isFull
+                      ? 'Entrar na lista de espera'
+                      : reg.phase === 'vip'
+                      ? '🌟 Inscrever-se (acesso VIP)'
+                      : 'Inscrever-se'}
+                  </button>
+                ) : (
+                  <button className="btn-ghost opacity-60" disabled>
+                    Inscrições fechadas
                   </button>
                 )}
               </div>
             </div>
           )}
         </div>
+
+        {reg && <WindowBanner reg={reg} viewerIsVip={reg.viewerIsVip} blocked={!canRegister && me.status === 'none'} />}
 
         {msg && (
           <p
@@ -116,6 +132,38 @@ function statusOf(roster, playerId) {
   return { status: 'none' };
 }
 
+// Banner explicando a janela de inscrição (acesso antecipado VIP).
+function WindowBanner({ reg, viewerIsVip, blocked }) {
+  if (reg.phase === 'open' && !reg.vipOpensAt) return null;
+
+  let text;
+  let tone = 'text-zinc-300 border-white/10 bg-black/20';
+  if (reg.phase === 'pending') {
+    tone = 'text-blue-200 border-blue-400/20 bg-blue-500/10';
+    text = reg.vipOpensAt
+      ? `Inscrições abrem para VIPs em ${dateTimeText(reg.vipOpensAt)} e para todos em ${dateTimeText(reg.opensAt)}.`
+      : `Inscrições abrem em ${dateTimeText(reg.opensAt)}.`;
+  } else if (reg.phase === 'vip') {
+    tone = 'text-yellow-200 border-yellow-400/20 bg-yellow-500/10';
+    text = viewerIsVip
+      ? `🌟 Acesso antecipado VIP liberado para você. Abertura geral em ${dateTimeText(reg.opensAt)}.`
+      : `🌟 Acesso antecipado VIP em andamento — exclusivo para VIPs até ${dateTimeText(reg.opensAt)}.`;
+  } else {
+    return null; // open sem necessidade de aviso
+  }
+
+  return (
+    <div className={`rounded-xl border px-4 py-2.5 text-sm ${tone}`}>
+      {text}
+      {blocked && reg.phase === 'vip' && !viewerIsVip && (
+        <span className="block text-xs mt-1 opacity-80">
+          Fale com o organizador para virar VIP e garantir inscrição antecipada.
+        </span>
+      )}
+    </div>
+  );
+}
+
 function SeatBadge({ roster }) {
   if (roster.seats === null) {
     return <span className="chip">{roster.confirmedCount} inscritos · vagas livres</span>;
@@ -123,10 +171,10 @@ function SeatBadge({ roster }) {
   return (
     <div className="inline-flex flex-col items-end">
       <span className={`chip ${roster.isFull ? 'text-yellow-300' : 'text-green-300'}`}>
-        {roster.confirmedCount}/{roster.seats} vagas
+        {roster.confirmedCount}/{roster.seats} vagas · {roster.tables} mesas
         {roster.isFull && roster.waitlistCount > 0 && ` · ${roster.waitlistCount} na espera`}
       </span>
-      <div className="w-40 h-1.5 bg-black/40 rounded-full mt-1.5 overflow-hidden">
+      <div className="w-44 h-1.5 bg-black/40 rounded-full mt-1.5 overflow-hidden">
         <div
           className="h-full bg-purple-light"
           style={{ width: `${Math.min(100, (roster.confirmedCount / roster.seats) * 100)}%` }}
@@ -140,51 +188,78 @@ function Roster({ roster, meId }) {
   if (roster.total === 0) {
     return <p className="text-sm text-zinc-500">Ninguém inscrito ainda. Seja o primeiro!</p>;
   }
+
+  // Agrupa confirmados por mesa (9 por mesa) quando há mais de uma mesa.
+  const byTable = {};
+  roster.confirmed.forEach((p) => {
+    (byTable[p.table] ||= []).push(p);
+  });
+  const tableNums = Object.keys(byTable).map(Number).sort((a, b) => a - b);
+  const multiTable = tableNums.length > 1;
+
   return (
-    <div className="grid sm:grid-cols-2 gap-4 pt-2">
-      <RosterList
-        title={`Confirmados (${roster.confirmedCount})`}
-        players={roster.confirmed}
-        meId={meId}
-      />
-      {roster.waitlistCount > 0 && (
-        <RosterList
-          title={`Lista de espera (${roster.waitlistCount})`}
-          players={roster.waitlist}
-          meId={meId}
-          waitlist
-        />
-      )}
+    <div className="space-y-4 pt-2">
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div>
+          <div className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
+            Confirmados ({roster.confirmedCount})
+          </div>
+          {multiTable ? (
+            <div className="space-y-3">
+              {tableNums.map((t) => (
+                <div key={t}>
+                  <div className="text-[11px] font-medium text-purple-light mb-1">
+                    🃏 Mesa {t}{' '}
+                    <span className="text-zinc-500">({byTable[t].length}/{roster.seatsPerTable})</span>
+                  </div>
+                  <PlayerRows players={byTable[t]} meId={meId} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <PlayerRows players={roster.confirmed} meId={meId} numbered />
+          )}
+        </div>
+
+        {roster.waitlistCount > 0 && (
+          <div>
+            <div className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
+              Lista de espera ({roster.waitlistCount})
+            </div>
+            <PlayerRows players={roster.waitlist} meId={meId} waitlist />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-function RosterList({ title, players, meId, waitlist }) {
+function PlayerRows({ players, meId, waitlist, numbered }) {
   return (
-    <div>
-      <div className="text-xs uppercase tracking-wide text-zinc-500 mb-2">{title}</div>
-      <div className="space-y-1">
-        {players.map((p, i) => (
-          <div
-            key={p.id}
-            className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm ${
-              p.id === meId ? 'bg-purple/20 border border-purple/40' : 'bg-black/20'
-            }`}
-          >
+    <div className="space-y-1">
+      {players.map((p, i) => (
+        <div
+          key={p.id}
+          className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm ${
+            p.id === meId ? 'bg-purple/20 border border-purple/40' : 'bg-black/20'
+          }`}
+        >
+          {(waitlist || numbered) && (
             <span className="w-6 text-center text-zinc-500 font-display">
               {waitlist ? `${p.queue}º` : i + 1}
             </span>
-            <span style={{ color: p.color }}>
-              <Suit suit={p.suit} />
-            </span>
-            <span className="flex-1 truncate">
-              {p.name}
-              {p.nickname && <span className="text-zinc-500"> “{p.nickname}”</span>}
-            </span>
-            {p.id === meId && <span className="text-[10px] text-purple-light">você</span>}
-          </div>
-        ))}
-      </div>
+          )}
+          <span style={{ color: p.color }}>
+            <Suit suit={p.suit} />
+          </span>
+          <span className="flex-1 truncate">
+            {p.name}
+            {p.nickname && <span className="text-zinc-500"> “{p.nickname}”</span>}
+          </span>
+          {p.vip && <span className="text-[10px] text-yellow-300" title="VIP">★</span>}
+          {p.id === meId && <span className="text-[10px] text-purple-light">você</span>}
+        </div>
+      ))}
     </div>
   );
 }

@@ -14,9 +14,13 @@ Esta entrega cobre as **Fases 1 e 2** do roadmap da especificação:
   modelo de dados completo e identidade visual preto/roxo.
 - **Fase 2 — Ranking:** painel do organizador, lançamento de resultados, cálculo
   automático de pontos e leaderboard da temporada funcionando ponta a ponta.
-- **Fase 3 (parcial) — Lobby de inscrições com lista de espera:** o jogador se
-  inscreve no próximo torneio; ao lotar (`seats`), as inscrições seguintes entram
-  numa fila de espera e a promoção é automática quando alguém cancela.
+- **Fase 3 (parcial) — Lobby de inscrições:**
+  - Torneios multi-mesa: **9 pessoas por mesa**, lotação de **18 a 40 vagas**.
+    O roster confirmado é agrupado por mesa automaticamente.
+  - **Lista de espera:** ao lotar, as inscrições seguintes entram numa fila e a
+    promoção é automática quando alguém cancela.
+  - **Acesso antecipado VIP:** jogadores marcados como VIP podem se inscrever
+    durante uma janela exclusiva, antes da abertura geral do torneio.
 
 ## Stack
 

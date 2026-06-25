@@ -2,6 +2,7 @@ import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth, requireOrganizer, optionalAuth } from '../auth.js';
 import { publicPlayer } from '../stats.js';
+import { SEATS_PER_TABLE, SEATS_MIN, SEATS_MAX, tablesFor } from '../config.js';
 
 const router = Router();
 
@@ -26,6 +27,7 @@ function buildRoster(tournamentId, seats) {
     player.registered_at = row.registered_at;
     if (limit === null || i < limit) {
       player.status = 'confirmed';
+      player.table = Math.floor(i / SEATS_PER_TABLE) + 1; // mesa (9 por mesa)
       confirmed.push(player);
     } else {
       player.status = 'waitlist';
@@ -36,6 +38,8 @@ function buildRoster(tournamentId, seats) {
 
   return {
     seats: limit,
+    seatsPerTable: SEATS_PER_TABLE,
+    tables: limit === null ? tablesFor(confirmed.length) : tablesFor(limit),
     total: rows.length,
     confirmedCount: confirmed.length,
     waitlistCount: waitlist.length,
@@ -44,6 +48,33 @@ function buildRoster(tournamentId, seats) {
     confirmed,
     waitlist,
   };
+}
+
+// Janela de inscrição: define se as inscrições estão fechadas (pending),
+// abertas só para VIPs (vip) ou abertas para todos (open).
+//  - sem datas        -> 'open' (abre imediatamente)
+//  - vip_opens_at < opens_at dá o período de acesso antecipado VIP
+export function registrationWindow(t) {
+  const now = Date.now();
+  const vipAt = t.vip_opens_at ? Date.parse(t.vip_opens_at) : null;
+  const allAt = t.opens_at ? Date.parse(t.opens_at) : null;
+  if (!vipAt && !allAt) {
+    return { phase: 'open', vipOpensAt: null, opensAt: null };
+  }
+  const vipStart = vipAt ?? allAt; // momento em que VIPs podem começar
+  const allStart = allAt ?? vipAt; // abertura geral
+  let phase;
+  if (now < vipStart) phase = 'pending';
+  else if (now < allStart) phase = 'vip';
+  else phase = 'open';
+  return { phase, vipOpensAt: t.vip_opens_at || null, opensAt: t.opens_at || null };
+}
+
+// Pode o jogador se inscrever agora? VIPs entram na fase 'vip'.
+export function canRegisterNow(window, player) {
+  if (window.phase === 'open') return true;
+  if (window.phase === 'vip') return !!player?.vip;
+  return false; // pending
 }
 
 // Status de um jogador específico no roster.
@@ -106,8 +137,8 @@ router.get('/next', (_req, res) => {
   res.json(row || null);
 });
 
-// Detalhe de um torneio, com inscritos e resultado final
-router.get('/:id', (req, res) => {
+// Detalhe de um torneio, com inscritos, janela de inscrição e resultado final
+router.get('/:id', optionalAuth, (req, res) => {
   const t = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(req.params.id);
   if (!t) return res.status(404).json({ error: 'Torneio não encontrado' });
   const roster = buildRoster(t.id, t.seats);
@@ -120,15 +151,37 @@ router.get('/:id', (req, res) => {
         WHERE r.tournament_id = ? ORDER BY r.position ASC`
     )
     .all(req.params.id);
-  res.json({ tournament: t, registrations, roster, results });
+
+  const window = registrationWindow(t);
+  let canRegister = false;
+  let viewer = null;
+  if (req.user) {
+    viewer = db.prepare('SELECT vip FROM players WHERE id = ?').get(req.user.id);
+    canRegister = t.status === 'scheduled' && canRegisterNow(window, viewer);
+  }
+  const registration = { ...window, canRegister, viewerIsVip: !!viewer?.vip };
+
+  res.json({ tournament: t, registrations, roster, registration, results });
 });
 
-// Inscrição do jogador logado. Se o torneio estiver lotado, entra na lista de espera.
+// Inscrição do jogador logado. Respeita a janela (acesso antecipado VIP) e,
+// se o torneio estiver lotado, encaminha para a lista de espera.
 router.post('/:id/register', requireAuth, (req, res) => {
   const t = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(req.params.id);
   if (!t) return res.status(404).json({ error: 'Torneio não encontrado' });
   if (t.status !== 'scheduled')
     return res.status(400).json({ error: 'Inscrições encerradas para este torneio' });
+
+  const window = registrationWindow(t);
+  const player = db.prepare('SELECT vip FROM players WHERE id = ?').get(req.user.id);
+  if (!canRegisterNow(window, player)) {
+    const msg =
+      window.phase === 'vip'
+        ? 'Acesso antecipado: as inscrições estão abertas apenas para VIPs por enquanto.'
+        : 'As inscrições para este torneio ainda não foram abertas.';
+    return res.status(403).json({ error: msg, registration: window });
+  }
+
   try {
     db.prepare(
       'INSERT INTO registrations (tournament_id, player_id) VALUES (?, ?)'
@@ -157,12 +210,28 @@ router.delete('/:id/register', requireAuth, (req, res) => {
 
 const FIELDS = [
   'season_id', 'number', 'name', 'kind', 'modality', 'date', 'buy_in',
-  'starting_stack', 'blind_structure', 'rebuy', 'seats', 'status',
+  'starting_stack', 'blind_structure', 'rebuy', 'seats', 'vip_opens_at',
+  'opens_at', 'status',
 ];
+
+// Vagas: opcional (null = ilimitado). Quando informada, deve respeitar a faixa
+// de 18 a 40 (mesas de 9 pessoas).
+function validateSeats(seats) {
+  if (seats === null || seats === undefined || seats === '') return null;
+  const n = Number(seats);
+  if (!Number.isInteger(n) || n < SEATS_MIN || n > SEATS_MAX) {
+    return `Vagas devem ficar entre ${SEATS_MIN} e ${SEATS_MAX} (mesas de ${SEATS_PER_TABLE}).`;
+  }
+  return null;
+}
 
 router.post('/', requireAuth, requireOrganizer, (req, res) => {
   const b = req.body || {};
   if (!b.name) return res.status(400).json({ error: 'Nome do torneio é obrigatório' });
+  if ('seats' in b) {
+    const err = validateSeats(b.seats);
+    if (err) return res.status(400).json({ error: err });
+  }
   const cols = FIELDS.filter((f) => f in b);
   const placeholders = cols.map(() => '?').join(', ');
   const info = db
@@ -176,6 +245,10 @@ router.put('/:id', requireAuth, requireOrganizer, (req, res) => {
   const existing = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Torneio não encontrado' });
   const b = req.body || {};
+  if ('seats' in b) {
+    const err = validateSeats(b.seats);
+    if (err) return res.status(400).json({ error: err });
+  }
   const cols = FIELDS.filter((f) => f in b);
   if (!cols.length) return res.status(400).json({ error: 'Nada para atualizar' });
   db.prepare(`UPDATE tournaments SET ${cols.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`)

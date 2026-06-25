@@ -3,10 +3,11 @@ import db from './db.js';
 // Remove campos sensíveis e faz parse de JSON antes de devolver um jogador.
 export function publicPlayer(row) {
   if (!row) return null;
-  const { password_hash, socials, active, ...rest } = row;
+  const { password_hash, socials, active, vip, ...rest } = row;
   return {
     ...rest,
     active: !!active,
+    vip: !!vip,
     socials: safeParse(socials, {}),
   };
 }

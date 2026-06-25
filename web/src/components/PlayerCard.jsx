@@ -20,7 +20,8 @@ export default function PlayerCard({ player, stats, badges = [] }) {
         {/* topo: naipe + número da carta */}
         <div className="flex items-center justify-between text-2xl" style={{ color }}>
           <Suit suit={player.suit} />
-          <span className="text-xs font-display tracking-widest text-zinc-500">
+          <span className="text-xs font-display tracking-widest text-zinc-500 flex items-center gap-1.5">
+            {player.vip && <span className="text-yellow-300" title="VIP">★ VIP</span>}
             RIVER CLUB
           </span>
         </div>

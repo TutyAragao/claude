@@ -4,7 +4,7 @@ import { api } from '../../api.js';
 // Gerenciar jogadores: cadastrar, ativar/desativar, promover a organizador.
 export default function PlayersAdmin() {
   const [players, setPlayers] = useState([]);
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', vip: false });
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -21,7 +21,7 @@ export default function PlayersAdmin() {
     setMsg(null);
     try {
       await api.post('/admin/players', form);
-      setForm({ name: '', email: '', password: '' });
+      setForm({ name: '', email: '', password: '', vip: false });
       setMsg('Jogador cadastrado.');
       load();
     } catch (err) {
@@ -41,6 +41,10 @@ export default function PlayersAdmin() {
     });
     load();
   }
+  async function toggleVip(p) {
+    await api.put(`/admin/players/${p.id}`, { vip: !p.vip });
+    load();
+  }
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
@@ -58,6 +62,15 @@ export default function PlayersAdmin() {
           <label className="label">Senha provisória</label>
           <input className="input" value={form.password} onChange={set('password')} required />
         </div>
+        <label className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
+          <input
+            type="checkbox"
+            className="accent-yellow-400"
+            checked={form.vip}
+            onChange={(e) => setForm((f) => ({ ...f, vip: e.target.checked }))}
+          />
+          ★ VIP — acesso antecipado às inscrições
+        </label>
         {msg && <p className="text-sm text-purple-light">{msg}</p>}
         <button className="btn-primary" disabled={busy}>
           {busy ? '...' : 'Cadastrar'}
@@ -71,6 +84,7 @@ export default function PlayersAdmin() {
             <div className="min-w-0">
               <div className="font-medium truncate">
                 {p.name}
+                {p.vip && <span className="ml-2 text-yellow-300" title="VIP">★</span>}
                 {p.role === 'organizer' && (
                   <span className="ml-2 chip text-[10px] py-0.5">organizador</span>
                 )}
@@ -78,6 +92,15 @@ export default function PlayersAdmin() {
               <div className="text-xs text-zinc-500 truncate">{p.email}</div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              <button
+                className={`text-xs py-1 px-2 rounded-lg ${
+                  p.vip ? 'bg-yellow-500/15 text-yellow-300' : 'bg-white/5 text-zinc-400'
+                }`}
+                onClick={() => toggleVip(p)}
+                title="Acesso antecipado a inscrições"
+              >
+                {p.vip ? '★ VIP' : 'VIP'}
+              </button>
               <button className="btn-ghost text-xs py-1 px-2" onClick={() => toggleRole(p)}>
                 {p.role === 'organizer' ? '↓ jogador' : '↑ organizador'}
               </button>

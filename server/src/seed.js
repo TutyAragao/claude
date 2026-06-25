@@ -22,24 +22,24 @@ function seed() {
   reset();
 
   const insPlayer = db.prepare(
-    `INSERT INTO players (email, password_hash, name, nickname, role, suit, color, phrase, bio)
-     VALUES (@email, @hash, @name, @nickname, @role, @suit, @color, @phrase, @bio)`
+    `INSERT INTO players (email, password_hash, name, nickname, role, suit, color, phrase, bio, vip)
+     VALUES (@email, @hash, @name, @nickname, @role, @suit, @color, @phrase, @bio, @vip)`
   );
 
   const pwd = hashPassword(PASSWORD);
   const players = [
-    { email: 'admin@riverclub.gg', name: 'Marina Souza', nickname: 'Dealer', role: 'organizer', suit: 'spade', color: '#9D4EDD', phrase: 'A casa sempre organiza.', bio: 'Organizadora do River Club.' },
-    { email: 'arthur@riverclub.gg', name: 'Arthur Lima', nickname: 'River', role: 'player', suit: 'heart', color: '#E5384B', phrase: 'Sempre tem uma última carta.', bio: 'Especialista em virar a mão no river.' },
-    { email: 'bia@riverclub.gg', name: 'Beatriz Nunes', nickname: 'Bluff', role: 'player', suit: 'diamond', color: '#3FA7FF', phrase: 'Eu nunca blefo. (blefo)', bio: '' },
-    { email: 'caio@riverclub.gg', name: 'Caio Ferreira', nickname: 'All-in', role: 'player', suit: 'club', color: '#2ECC71', phrase: 'Pra que esperar?', bio: '' },
-    { email: 'dani@riverclub.gg', name: 'Daniela Rocha', nickname: 'Ice', role: 'player', suit: 'spade', color: '#F1C40F', phrase: 'Sangue frio.', bio: '' },
-    { email: 'edu@riverclub.gg', name: 'Eduardo Pires', nickname: 'Chip', role: 'player', suit: 'heart', color: '#FF7F50', phrase: 'Contando fichas.', bio: '' },
+    { email: 'admin@riverclub.gg', name: 'Marina Souza', nickname: 'Dealer', role: 'organizer', suit: 'spade', color: '#9D4EDD', phrase: 'A casa sempre organiza.', bio: 'Organizadora do River Club.', vip: 1 },
+    { email: 'arthur@riverclub.gg', name: 'Arthur Lima', nickname: 'River', role: 'player', suit: 'heart', color: '#E5384B', phrase: 'Sempre tem uma última carta.', bio: 'Especialista em virar a mão no river.', vip: 1 },
+    { email: 'bia@riverclub.gg', name: 'Beatriz Nunes', nickname: 'Bluff', role: 'player', suit: 'diamond', color: '#3FA7FF', phrase: 'Eu nunca blefo. (blefo)', bio: '', vip: 1 },
+    { email: 'caio@riverclub.gg', name: 'Caio Ferreira', nickname: 'All-in', role: 'player', suit: 'club', color: '#2ECC71', phrase: 'Pra que esperar?', bio: '', vip: 0 },
+    { email: 'dani@riverclub.gg', name: 'Daniela Rocha', nickname: 'Ice', role: 'player', suit: 'spade', color: '#F1C40F', phrase: 'Sangue frio.', bio: '', vip: 0 },
+    { email: 'edu@riverclub.gg', name: 'Eduardo Pires', nickname: 'Chip', role: 'player', suit: 'heart', color: '#FF7F50', phrase: 'Contando fichas.', bio: '', vip: 0 },
   ];
   const ids = players.map((p) =>
     Number(
       insPlayer.run({
         email: p.email, hash: pwd, name: p.name, nickname: p.nickname,
-        role: p.role, suit: p.suit, color: p.color, phrase: p.phrase, bio: p.bio,
+        role: p.role, suit: p.suit, color: p.color, phrase: p.phrase, bio: p.bio, vip: p.vip,
       }).lastInsertRowid
     )
   );
@@ -57,8 +57,8 @@ function seed() {
   );
 
   const insT = db.prepare(
-    `INSERT INTO tournaments (season_id, number, name, modality, date, buy_in, starting_stack, blind_structure, seats, status)
-     VALUES (?, ?, ?, 'Texas Hold''em', ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO tournaments (season_id, number, name, modality, date, buy_in, starting_stack, blind_structure, seats, vip_opens_at, opens_at, status)
+     VALUES (?, ?, ?, 'Texas Hold''em', ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   const insR = db.prepare(
     `INSERT INTO results (tournament_id, player_id, position, prize, points, bounties)
@@ -72,7 +72,7 @@ function seed() {
   ];
 
   for (const t of finished) {
-    const tid = Number(insT.run(seasonId, t.number, t.name, t.date, t.buy_in, 20000, '20min / nível', null, 'finished').lastInsertRowid);
+    const tid = Number(insT.run(seasonId, t.number, t.name, t.date, t.buy_in, 20000, '20min / nível', null, null, null, 'finished').lastInsertRowid);
     t.order.forEach((pi, idx) => {
       const position = idx + 1;
       const prize = t.prizes[idx] || 0;
@@ -82,13 +82,17 @@ function seed() {
     });
   }
 
-  // Próximo torneio agendado, com inscrições
+  // Próximo torneio agendado: 18 vagas (2 mesas de 9) com acesso antecipado VIP.
+  // Hoje (25/06) estamos na janela VIP: abriu p/ VIPs em 20/06 e abre p/ todos em 01/07.
   const nextId = Number(
-    insT.run(seasonId, 3, 'Mini Torneio #3', '2026-07-12T20:00:00', 50, 20000, '20min / nível', 3, 'scheduled').lastInsertRowid
+    insT.run(
+      seasonId, 3, 'Mini Torneio #3', '2026-07-12T20:00:00', 50, 20000, '20min / nível',
+      18, '2026-06-20T12:00:00', '2026-07-01T12:00:00', 'scheduled'
+    ).lastInsertRowid
   );
-  // 3 vagas, 4 inscritos -> o último entra na lista de espera (demo do recurso)
+  // VIPs já inscritos no acesso antecipado (Arthur e Beatriz).
   const insReg = db.prepare('INSERT INTO registrations (tournament_id, player_id) VALUES (?, ?)');
-  for (const pid of playerIds.slice(0, 4)) insReg.run(nextId, pid);
+  for (const pid of [playerIds[0], playerIds[1]]) insReg.run(nextId, pid);
 
   console.log('✓ Seed concluído.');
   console.log(`  Organizador: admin@riverclub.gg / ${PASSWORD}`);

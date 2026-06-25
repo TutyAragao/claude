@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS players (
   phrase        TEXT,                              -- frase de mesa
   bio           TEXT,
   socials       TEXT DEFAULT '{}',                 -- JSON { instagram, twitter, ... }
+  vip           INTEGER NOT NULL DEFAULT 0,        -- acesso antecipado a inscrições
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -50,7 +51,9 @@ CREATE TABLE IF NOT EXISTS tournaments (
   starting_stack  INTEGER DEFAULT 0,
   blind_structure TEXT,                                -- texto livre / JSON
   rebuy           TEXT,                                -- regras de re-buy/add-on
-  seats           INTEGER,                             -- vagas (lotação)
+  seats           INTEGER,                             -- vagas/lotação (9 por mesa, 18..40)
+  vip_opens_at    TEXT,                                -- abertura das inscrições para VIPs
+  opens_at        TEXT,                                -- abertura geral das inscrições
   status          TEXT NOT NULL DEFAULT 'scheduled',   -- scheduled|running|finished
   created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );

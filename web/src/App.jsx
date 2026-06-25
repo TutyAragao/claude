@@ -9,6 +9,7 @@ import Lobby from './pages/Lobby.jsx';
 import EditProfile from './pages/EditProfile.jsx';
 import PlayerProfile from './pages/PlayerProfile.jsx';
 import Players from './pages/Players.jsx';
+import Feed from './pages/Feed.jsx';
 import Admin from './pages/Admin.jsx';
 
 function Protected({ children, organizer }) {
@@ -47,6 +48,7 @@ export default function App() {
                   </Protected>
                 }
               />
+              <Route path="/feed" element={<Feed />} />
               <Route path="/ranking" element={<Ranking />} />
               <Route path="/torneios" element={<Lobby />} />
               <Route path="/jogadores" element={<Players />} />

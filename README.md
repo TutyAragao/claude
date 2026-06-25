@@ -27,6 +27,9 @@ Esta entrega cobre as **Fases 1 e 2** do roadmap da especificação:
   - **Card de perfil público** com estatísticas, badges e rede de amigos.
   - **Avatares-personagem** (ex.: 🐵 Macaco Mafioso, 🦈 Tubarão, 🃏 Coringa…)
     ou URL de imagem personalizada.
+  - **Feed de atividades:** quem ganhou, novos recordes (maior prêmio/pontos do
+    clube, primeira vitória) e novas amizades. Derivado dos dados (sem tabela de
+    eventos), com filtro Tudo / Amigos. Ver `server/src/feed.js`.
 
 ## Stack
 

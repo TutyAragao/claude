@@ -28,6 +28,24 @@ export function dateText(iso) {
   });
 }
 
+export function relativeTime(value) {
+  if (!value) return '';
+  const iso = value.includes('T') ? value : value.replace(' ', 'T');
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '';
+  const diff = Date.now() - then;
+  const min = Math.round(diff / 60000);
+  if (min < 1) return 'agora';
+  if (min < 60) return `há ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `há ${h} h`;
+  const d = Math.round(h / 24);
+  if (d < 30) return `há ${d} dia${d === 1 ? '' : 's'}`;
+  const months = Math.round(d / 30);
+  if (months < 12) return `há ${months} ${months === 1 ? 'mês' : 'meses'}`;
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 export function dateTimeText(iso) {
   if (!iso) return '—';
   const d = new Date(iso);

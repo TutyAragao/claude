@@ -6,6 +6,7 @@ import PlayerCard from '../components/PlayerCard.jsx';
 import StatTile from '../components/StatTile.jsx';
 import Avatar from '../components/Avatar.jsx';
 import FriendButton from '../components/FriendButton.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 import { money, roiText, dateText, chips } from '../format.js';
 
 export default function PlayerProfile() {
@@ -22,7 +23,18 @@ export default function PlayerProfile() {
     }).catch(() => {});
   }, [id]);
 
-  if (!data) return <p className="text-zinc-500">Carregando…</p>;
+  if (!data) {
+    return (
+      <div className="flex flex-col md:flex-row gap-8">
+        <Skeleton className="h-[420px] w-full max-w-[320px] rounded-3xl mx-auto md:mx-0" />
+        <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3 h-fit">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-20" />
+          ))}
+        </div>
+      </div>
+    );
+  }
   const { stats, badges, history, friends, friendCount } = data;
   const isMe = player && String(player.id) === String(id);
 

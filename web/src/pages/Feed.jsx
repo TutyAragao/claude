@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
 import Avatar from '../components/Avatar.jsx';
+import PageHeader from '../components/PageHeader.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 import { money, chips, relativeTime } from '../format.js';
 
 // Feed de atividades do clube: quem ganhou, novos recordes e novas amizades.
@@ -19,10 +21,7 @@ export default function Feed() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Feed do clube</h1>
-          <p className="text-sm text-zinc-400">Quem ganhou, novos recordes e amizades.</p>
-        </div>
+        <PageHeader title="Feed do clube" subtitle="Quem ganhou, novos recordes e amizades." />
         {player && (
           <div className="flex rounded-xl bg-black/40 p-1 text-sm">
             {[
@@ -44,7 +43,11 @@ export default function Feed() {
       </div>
 
       {items === null ? (
-        <p className="text-zinc-500">Carregando…</p>
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16" />
+          ))}
+        </div>
       ) : items.length === 0 ? (
         <div className="card p-10 text-center text-zinc-500">
           {scope === 'friends'
@@ -74,7 +77,7 @@ const META = {
 function ActivityItem({ e }) {
   const meta = META[e.type] || { icon: '•', accent: '#9D4EDD' };
   return (
-    <div className="card p-4 flex items-center gap-3">
+    <div className="card lift p-4 flex items-center gap-3">
       <div
         className="w-10 h-10 rounded-xl grid place-items-center text-lg shrink-0"
         style={{ background: `${meta.accent}22`, border: `1px solid ${meta.accent}55` }}

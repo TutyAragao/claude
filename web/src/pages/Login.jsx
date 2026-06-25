@@ -30,19 +30,29 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen grid place-items-center px-4 py-10">
+      <div className="w-full max-w-sm animate-fade-up">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-2 tracking-widest text-purple-light">♠ ♥ ♦ ♣</div>
-          <h1 className="font-display text-3xl font-bold">
-            River <span className="text-purple-light">Club</span>
+          <div className="flex justify-center gap-2 mb-4 text-4xl">
+            {['♠', '♥', '♦', '♣'].map((s, i) => (
+              <span
+                key={s}
+                className={i % 2 ? 'text-red-400' : 'text-purple-light'}
+                style={{ animation: `float-suit 3s ease-in-out ${i * 0.2}s infinite` }}
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+          <h1 className="font-display text-4xl font-bold">
+            River <span className="text-gradient">Club</span>
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm text-zinc-400 mt-2">
             Perfis e ranking dos torneios presenciais
           </p>
         </div>
 
-        <form onSubmit={submit} className="card p-6 space-y-4">
+        <form onSubmit={submit} className="card p-6 space-y-4 shadow-glow">
           <div className="flex rounded-xl bg-black/40 p-1 text-sm">
             <Tab active={mode === 'login'} onClick={() => setMode('login')}>
               Entrar

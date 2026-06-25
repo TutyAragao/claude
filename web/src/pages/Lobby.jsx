@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
 import { money, dateText } from '../format.js';
 import NextTournament from '../components/NextTournament.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 
 export default function Lobby() {
   const { player } = useAuth();
@@ -22,10 +23,7 @@ export default function Lobby() {
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Lobby de torneios</h1>
-          <p className="text-sm text-zinc-400">Próximo evento e histórico do clube.</p>
-        </div>
+        <PageHeader title="Lobby de torneios" subtitle="Próximo evento e histórico do clube." />
         {player && (
           <div className="flex rounded-xl bg-black/40 p-1 text-sm">
             {[
@@ -61,7 +59,7 @@ export default function Lobby() {
         ) : (
           <div className="grid sm:grid-cols-2 gap-3">
             {finished.map((t) => (
-              <div key={t.id} className="card p-4">
+              <div key={t.id} className="card lift p-4">
                 <div className="flex items-center justify-between">
                   <div className="font-display font-semibold">{t.name}</div>
                   <div className="text-xs text-zinc-500">{dateText(t.date)}</div>

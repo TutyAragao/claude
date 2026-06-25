@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import Suit from '../components/Suit.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { money } from '../format.js';
 
 const PERIODS = [
@@ -26,12 +27,10 @@ export default function Ranking() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Ranking presencial</h1>
-          <p className="text-sm text-zinc-400">
-            O diferencial do clube. Pontos somados a cada torneio da temporada.
-          </p>
-        </div>
+        <PageHeader
+          title="Ranking presencial"
+          subtitle="O diferencial do clube. Pontos somados a cada torneio da temporada."
+        />
         <div className="flex rounded-xl bg-black/40 p-1 text-sm">
           {PERIODS.map((p) => (
             <button
@@ -115,7 +114,7 @@ function Podium({ top }) {
           <Link
             to={`/jogador/${p.id}`}
             key={p.id}
-            className="card p-4 text-center flex flex-col items-center justify-end"
+            className="card lift p-4 text-center flex flex-col items-center justify-end"
           >
             <div
               className="w-14 h-14 rounded-full grid place-items-center text-xl font-display font-bold mb-2"

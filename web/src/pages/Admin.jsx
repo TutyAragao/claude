@@ -5,6 +5,7 @@ import LaunchResults from '../components/admin/LaunchResults.jsx';
 import ScoringEditor from '../components/admin/ScoringEditor.jsx';
 import TournamentsAdmin from '../components/admin/TournamentsAdmin.jsx';
 import PlayersAdmin from '../components/admin/PlayersAdmin.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 
 const TABS = [
   ['overview', 'Visão geral'],
@@ -19,22 +20,21 @@ export default function Admin() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Painel do organizador</h1>
-        <p className="text-sm text-zinc-400">
-          Onde o presencial vira dado e alimenta o ranking e os perfis.
-        </p>
-      </div>
+      <PageHeader
+        title="Painel do organizador"
+        subtitle="Onde o presencial vira dado e alimenta o ranking e os perfis."
+      />
 
-      <div className="flex flex-wrap gap-1 border-b border-white/5">
+      <div className="flex flex-wrap gap-1 p-1 rounded-xl w-fit max-w-full overflow-x-auto no-scrollbar"
+        style={{ background: 'rgb(var(--t-100) / 0.04)' }}>
         {TABS.map(([k, label]) => (
           <button
             key={k}
             onClick={() => setTab(k)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition whitespace-nowrap ${
               tab === k
-                ? 'border-purple-light text-purple-light'
-                : 'border-transparent text-zinc-400 hover:text-white'
+                ? 'bg-purple text-white shadow-glow'
+                : 'text-zinc-400 hover:text-white'
             }`}
           >
             {label}

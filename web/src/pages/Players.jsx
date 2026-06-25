@@ -5,6 +5,7 @@ import { api } from '../api.js';
 import Avatar from '../components/Avatar.jsx';
 import Suit from '../components/Suit.jsx';
 import FriendButton from '../components/FriendButton.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 
 // Diretório social do clube: encontre jogadores, veja pedidos de amizade
 // recebidos e gerencie suas conexões.
@@ -53,10 +54,7 @@ export default function Players() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Jogadores</h1>
-        <p className="text-sm text-zinc-400">Conheça o clube e faça amizades.</p>
-      </div>
+      <PageHeader title="Jogadores" subtitle="Conheça o clube e faça amizades." />
 
       {/* Pedidos de amizade recebidos */}
       {player && requests.length > 0 && (
@@ -93,7 +91,7 @@ export default function Players() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {filtered.map((p) => (
-          <div key={p.id} className="card p-4 flex items-center gap-3">
+          <div key={p.id} className="card lift p-4 flex items-center gap-3">
             <Link to={`/jogador/${p.id}`}>
               <Avatar player={p} size={52} rounded="rounded-xl" />
             </Link>

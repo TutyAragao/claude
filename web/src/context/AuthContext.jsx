@@ -1,11 +1,17 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { api, setToken, getToken } from '../api.js';
+import { applyTheme } from '../themes.js';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Aplica o tema do jogador (escuro para visitantes/deslogados).
+  useEffect(() => {
+    applyTheme(player?.theme || 'dark');
+  }, [player?.theme]);
 
   useEffect(() => {
     if (!getToken()) {

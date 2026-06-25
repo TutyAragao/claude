@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS players (
   bio           TEXT,
   socials       TEXT DEFAULT '{}',                 -- JSON { instagram, twitter, ... }
   vip           INTEGER NOT NULL DEFAULT 0,        -- acesso antecipado a inscrições
+  theme         TEXT NOT NULL DEFAULT 'dark',      -- tema do site (light/dark grátis; demais VIP)
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

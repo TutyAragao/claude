@@ -2,6 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Temas (variáveis em triplas RGB) ===== */
+/* Padrão = Escuro (vive no :root para os temas VIP só sobrescreverem o acento) */
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: 10 10 10;
+  --surface: 18 18 18;
+  --surface-2: 26 26 30;
+  --field: 8 8 10;
+  --border: 255 255 255;
+  --accent: 123 47 191;
+  --accent-light: 157 78 221;
+  --glow: 157 78 221;
+  --t-100: 244 244 245;
+  --t-200: 228 228 231;
+  --t-300: 212 212 216;
+  --t-400: 161 161 170;
+  --t-500: 113 113 122;
+  --t-600: 82 82 91;
+}
+
+/* Tema Claro (gratuito) */
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: 244 245 248;
+  --surface: 255 255 255;
+  --surface-2: 255 255 255;
+  --field: 255 255 255;
+  --border: 24 24 27;
+  --accent: 123 47 191;
+  --accent-light: 124 58 191;
+  --glow: 157 78 221;
+  --t-100: 24 24 27;
+  --t-200: 39 39 42;
+  --t-300: 63 63 70;
+  --t-400: 82 82 91;
+  --t-500: 113 113 122;
+  --t-600: 161 161 170;
+}
+
+/* ===== Temas VIP (variações de acento sobre o escuro) ===== */
+[data-theme='neon'] {
+  --accent: 22 163 74;
+  --accent-light: 74 222 128;
+  --glow: 74 222 128;
+}
+[data-theme='crimson'] {
+  --accent: 199 30 50;
+  --accent-light: 240 65 80;
+  --glow: 240 65 80;
+}
+[data-theme='ouro'] {
+  --accent: 202 162 20;
+  --accent-light: 241 196 15;
+  --glow: 241 196 15;
+}
+[data-theme='oceano'] {
+  --accent: 30 120 200;
+  --accent-light: 63 167 255;
+  --glow: 63 167 255;
+}
+[data-theme='roxo'] {
+  --accent: 147 51 234;
+  --accent-light: 192 132 252;
+  --glow: 192 132 252;
+}
+
 :root {
   color-scheme: dark;
 }
@@ -9,14 +76,21 @@
 body {
   @apply bg-ink text-zinc-100 font-sans antialiased;
   background-image:
-    radial-gradient(1200px 600px at 80% -10%, rgba(123, 47, 191, 0.18), transparent),
-    radial-gradient(900px 500px at -10% 20%, rgba(157, 78, 221, 0.12), transparent);
+    radial-gradient(1200px 600px at 80% -10%, rgb(var(--accent) / 0.18), transparent),
+    radial-gradient(900px 500px at -10% 20%, rgb(var(--accent-light) / 0.12), transparent);
   min-height: 100vh;
+}
+/* Glows mais suaves no tema claro */
+[data-theme='light'] body {
+  background-image:
+    radial-gradient(1200px 600px at 80% -10%, rgb(var(--accent) / 0.08), transparent),
+    radial-gradient(900px 500px at -10% 20%, rgb(var(--accent-light) / 0.06), transparent);
 }
 
 @layer components {
   .card {
-    @apply bg-ink-card/80 border border-white/5 rounded-2xl backdrop-blur;
+    @apply bg-ink-card/80 border rounded-2xl backdrop-blur;
+    border-color: rgb(var(--border) / 0.08);
   }
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5
@@ -26,18 +100,23 @@ body {
     @apply btn bg-purple hover:bg-purple-light text-white shadow-glow;
   }
   .btn-ghost {
-    @apply btn bg-white/5 hover:bg-white/10 text-zinc-200 border border-white/10;
+    @apply btn text-zinc-200 border;
+    background-color: rgb(var(--t-100) / 0.05);
+    border-color: rgb(var(--border) / 0.12);
   }
   .input {
-    @apply w-full rounded-xl bg-black/40 border border-white/10 px-3.5 py-2.5
+    @apply w-full rounded-xl border px-3.5 py-2.5
            text-zinc-100 placeholder:text-zinc-500
            focus:outline-none focus:ring-2 focus:ring-purple-light/60;
+    background-color: rgb(var(--field) / 0.9);
+    border-color: rgb(var(--border) / 0.14);
   }
   .label {
     @apply block text-xs font-medium uppercase tracking-wide text-zinc-400 mb-1.5;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium
-           bg-white/5 border border-white/10;
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium border;
+    background-color: rgb(var(--t-100) / 0.05);
+    border-color: rgb(var(--border) / 0.12);
   }
 }

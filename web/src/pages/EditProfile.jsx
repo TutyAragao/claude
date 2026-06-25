@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
 import PlayerCard from '../components/PlayerCard.jsx';
 import { SUIT_OPTIONS } from '../components/Suit.jsx';
 import { AVATARS } from '../avatars.js';
+import { THEMES, applyTheme } from '../themes.js';
 
 const COLORS = ['#9D4EDD', '#7B2FBF', '#E5384B', '#3FA7FF', '#2ECC71', '#F1C40F', '#FF7F50', '#E84393'];
 
@@ -18,6 +19,7 @@ export default function EditProfile() {
     bio: player.bio || '',
     suit: player.suit || 'spade',
     color: player.color || '#9D4EDD',
+    theme: player.theme || 'dark',
     avatar: player.avatar || '',
     avatar_url: player.avatar_url || '',
   });
@@ -25,6 +27,15 @@ export default function EditProfile() {
   const [error, setError] = useState('');
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Preview de tema ao vivo; reverte ao tema salvo se sair sem salvar.
+  function previewTheme(key) {
+    set('theme', key);
+    applyTheme(key);
+  }
+  useEffect(() => {
+    return () => applyTheme(player.theme || 'dark');
+  }, [player.theme]);
 
   async function save(e) {
     e.preventDefault();
@@ -140,6 +151,47 @@ export default function EditProfile() {
               />
             ))}
           </div>
+        </Field>
+
+        <Field label="Tema do site">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {THEMES.map((t) => {
+              const locked = t.vip && !player.vip;
+              const active = form.theme === t.key;
+              return (
+                <button
+                  type="button"
+                  key={t.key}
+                  disabled={locked}
+                  onClick={() => previewTheme(t.key)}
+                  className={`relative rounded-xl p-2 border text-left transition ${
+                    active ? 'border-purple-light ring-1 ring-purple-light/60' : 'border-white/10 hover:border-white/30'
+                  } ${locked ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  title={locked ? 'Exclusivo para VIPs' : t.name}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-6 h-6 rounded-full border border-white/20"
+                      style={{ background: t.bg }}
+                    >
+                      <span className="block w-2.5 h-2.5 rounded-full m-1" style={{ background: t.accent }} />
+                    </span>
+                    <span className="text-sm">{t.name}</span>
+                  </div>
+                  {t.vip && (
+                    <span className="absolute top-1.5 right-1.5 text-[10px] text-yellow-300">
+                      {locked ? '🔒' : '★'}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {!player.vip && (
+            <p className="text-xs text-zinc-500 mt-1.5">
+              Claro e Escuro são gratuitos. Os temas com 🔒 são exclusivos VIP.
+            </p>
+          )}
         </Field>
 
         {error && <p className="text-sm text-red-400">{error}</p>}

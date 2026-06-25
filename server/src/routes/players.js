@@ -55,6 +55,11 @@ function tournamentHistory(playerId) {
 
 const EDITABLE = ['name', 'nickname', 'avatar_url', 'avatar', 'suit', 'color', 'phrase', 'bio'];
 
+// Temas: claro/escuro grátis; os demais exigem VIP.
+const FREE_THEMES = ['dark', 'light'];
+const VIP_THEMES = ['neon', 'crimson', 'ouro', 'oceano', 'roxo'];
+const ALL_THEMES = [...FREE_THEMES, ...VIP_THEMES];
+
 // Atualiza o próprio perfil
 router.put('/me', requireAuth, (req, res) => {
   const body = req.body || {};
@@ -65,6 +70,20 @@ router.put('/me', requireAuth, (req, res) => {
       fields.push(`${key} = ?`);
       values.push(body[key]);
     }
+  }
+  if ('theme' in body) {
+    const theme = body.theme;
+    if (!ALL_THEMES.includes(theme)) {
+      return res.status(400).json({ error: 'Tema inválido' });
+    }
+    if (VIP_THEMES.includes(theme)) {
+      const me = db.prepare('SELECT vip FROM players WHERE id = ?').get(req.user.id);
+      if (!me?.vip) {
+        return res.status(403).json({ error: 'Este tema é exclusivo para VIPs' });
+      }
+    }
+    fields.push('theme = ?');
+    values.push(theme);
   }
   if ('socials' in body) {
     fields.push('socials = ?');

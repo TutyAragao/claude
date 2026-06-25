@@ -33,6 +33,9 @@ Esta entrega cobre as **Fases 1 e 2** do roadmap da especificação:
   - **Notificações in-app:** sino no topo com contagem de não lidas. Avisa quando
     você recebe um pedido de amizade, quando ele é aceito e quando você é
     **promovido da lista de espera** de um torneio.
+  - **Temas:** Claro e Escuro gratuitos; temas extras (Neon, Carmesim, Ouro,
+    Oceano, Roxo Real) **exclusivos VIP**, com a regra aplicada no servidor.
+    O tema acompanha a conta. Ver `web/src/themes.js`.
 
 ## Stack
 

@@ -27,6 +27,7 @@ function ensureColumn(table, column, ddl) {
 }
 ensureColumn('players', 'vip', 'vip INTEGER NOT NULL DEFAULT 0');
 ensureColumn('players', 'avatar', 'avatar TEXT');
+ensureColumn('players', 'theme', "theme TEXT NOT NULL DEFAULT 'dark'");
 ensureColumn('tournaments', 'vip_opens_at', 'vip_opens_at TEXT');
 ensureColumn('tournaments', 'opens_at', 'opens_at TEXT');
 ensureColumn('results', 'stack_start', 'stack_start INTEGER NOT NULL DEFAULT 0');

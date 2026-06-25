@@ -100,12 +100,19 @@ router.post('/tournaments/:id/results', (req, res) => {
   const normalized = entries.map((e, i) => {
     const position = Number(e.position ?? i + 1);
     const bounties = Number(e.bounties || 0);
+    // Pontos: calculados pela posição (tabela da temporada), mas o organizador
+    // pode enviar um valor manual que sobrescreve o automático.
+    const hasOverride =
+      e.points !== undefined && e.points !== null && e.points !== '' && !Number.isNaN(Number(e.points));
+    const points = hasOverride
+      ? Number(e.points)
+      : pointsFor({ position, bounties }, scoring);
     return {
       player_id: Number(e.player_id),
       position,
       prize: Number(e.prize || 0),
       bounties,
-      points: pointsFor({ position, bounties }, scoring),
+      points,
     };
   });
 

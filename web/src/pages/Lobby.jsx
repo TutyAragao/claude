@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
-import { money, dateTimeText, dateText } from '../format.js';
+import { money, dateText } from '../format.js';
+import NextTournament from '../components/NextTournament.jsx';
 
 export default function Lobby() {
   const { player } = useAuth();
   const [next, setNext] = useState(null);
   const [list, setList] = useState([]);
   const [scope, setScope] = useState('all'); // all | mine
-  const [msg, setMsg] = useState('');
 
   function load() {
     api.get('/tournaments/next').then(setNext).catch(() => {});
@@ -16,17 +16,6 @@ export default function Lobby() {
     api.get(`/tournaments${q}`).then(setList).catch(() => {});
   }
   useEffect(load, [scope]);
-
-  async function toggleRegister(t, registered) {
-    setMsg('');
-    try {
-      if (registered) await api.del(`/tournaments/${t.id}/register`);
-      else await api.post(`/tournaments/${t.id}/register`);
-      load();
-    } catch (err) {
-      setMsg(err.message);
-    }
-  }
 
   const finished = list.filter((t) => t.status === 'finished');
 
@@ -57,26 +46,11 @@ export default function Lobby() {
         )}
       </div>
 
-      {msg && <p className="text-sm text-red-400">{msg}</p>}
-
-      {next && (
-        <div className="card p-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple/20 to-transparent pointer-events-none" />
-          <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="chip mb-3">♠ Próximo torneio</div>
-              <h2 className="font-display text-2xl font-bold">{next.name}</h2>
-              <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm text-zinc-300">
-                <span>📅 {dateTimeText(next.date)}</span>
-                <span>💵 buy-in {money(next.buy_in)}</span>
-                {next.starting_stack ? <span>🎰 stack {next.starting_stack.toLocaleString('pt-BR')}</span> : null}
-                {next.blind_structure && <span>⏱ {next.blind_structure}</span>}
-              </div>
-            </div>
-            {player && (
-              <RegisterButton tournament={next} onToggle={toggleRegister} />
-            )}
-          </div>
+      {next ? (
+        <NextTournament tournament={next} />
+      ) : (
+        <div className="card p-8 text-center text-zinc-500">
+          Nenhum torneio agendado no momento.
         </div>
       )}
 
@@ -108,27 +82,5 @@ export default function Lobby() {
         )}
       </section>
     </div>
-  );
-}
-
-function RegisterButton({ tournament, onToggle }) {
-  // Sem detalhe de inscrição própria na lista; consulta rápida do detalhe.
-  const { player } = useAuth();
-  const [registered, setRegistered] = useState(null);
-
-  useEffect(() => {
-    api.get(`/tournaments/${tournament.id}`).then((d) => {
-      setRegistered(d.registrations.some((r) => r.id === player.id));
-    });
-  }, [tournament.id, player.id]);
-
-  if (registered === null) return null;
-  return (
-    <button
-      className={registered ? 'btn-ghost' : 'btn-primary'}
-      onClick={() => onToggle(tournament, registered).then(() => setRegistered(!registered))}
-    >
-      {registered ? 'Cancelar inscrição' : 'Inscrever-se'}
-    </button>
   );
 }

@@ -14,6 +14,9 @@ Esta entrega cobre as **Fases 1 e 2** do roadmap da especificação:
   modelo de dados completo e identidade visual preto/roxo.
 - **Fase 2 — Ranking:** painel do organizador, lançamento de resultados, cálculo
   automático de pontos e leaderboard da temporada funcionando ponta a ponta.
+- **Fase 3 (parcial) — Lobby de inscrições com lista de espera:** o jogador se
+  inscreve no próximo torneio; ao lotar (`seats`), as inscrições seguintes entram
+  numa fila de espera e a promoção é automática quando alguém cancela.
 
 ## Stack
 

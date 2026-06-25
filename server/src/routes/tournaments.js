@@ -5,6 +5,56 @@ import { publicPlayer } from '../stats.js';
 
 const router = Router();
 
+// Monta o roster de um torneio: confirmados x lista de espera.
+// O status é DERIVADO da ordem de inscrição (created_at): as primeiras `seats`
+// inscrições são confirmadas, o restante fica na espera. Assim a promoção ao
+// cancelar é automática — basta recalcular na leitura.
+function buildRoster(tournamentId, seats) {
+  const rows = db
+    .prepare(
+      `SELECT p.*, rg.created_at AS registered_at
+         FROM registrations rg JOIN players p ON p.id = rg.player_id
+        WHERE rg.tournament_id = ? ORDER BY rg.created_at, rg.id`
+    )
+    .all(tournamentId);
+
+  const limit = seats && seats > 0 ? seats : null; // null = vagas ilimitadas
+  const confirmed = [];
+  const waitlist = [];
+  rows.forEach((row, i) => {
+    const player = publicPlayer(row);
+    player.registered_at = row.registered_at;
+    if (limit === null || i < limit) {
+      player.status = 'confirmed';
+      confirmed.push(player);
+    } else {
+      player.status = 'waitlist';
+      player.queue = i - limit + 1; // posição na fila (1 = próximo a entrar)
+      waitlist.push(player);
+    }
+  });
+
+  return {
+    seats: limit,
+    total: rows.length,
+    confirmedCount: confirmed.length,
+    waitlistCount: waitlist.length,
+    spotsLeft: limit === null ? null : Math.max(0, limit - confirmed.length),
+    isFull: limit !== null && confirmed.length >= limit,
+    confirmed,
+    waitlist,
+  };
+}
+
+// Status de um jogador específico no roster.
+function playerRosterStatus(roster, playerId) {
+  const c = roster.confirmed.find((p) => p.id === playerId);
+  if (c) return { status: 'confirmed' };
+  const w = roster.waitlist.find((p) => p.id === playerId);
+  if (w) return { status: 'waitlist', queue: w.queue };
+  return { status: 'none' };
+}
+
 // Lobby: lista de torneios. Suporta ?status=scheduled|finished e ?mine=1
 router.get('/', optionalAuth, (req, res) => {
   const clauses = [];
@@ -60,13 +110,9 @@ router.get('/next', (_req, res) => {
 router.get('/:id', (req, res) => {
   const t = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(req.params.id);
   if (!t) return res.status(404).json({ error: 'Torneio não encontrado' });
-  const registrations = db
-    .prepare(
-      `SELECT p.* FROM registrations rg JOIN players p ON p.id = rg.player_id
-        WHERE rg.tournament_id = ? ORDER BY rg.created_at`
-    )
-    .all(req.params.id)
-    .map(publicPlayer);
+  const roster = buildRoster(t.id, t.seats);
+  // registrations flat (confirmados + espera, em ordem) para compatibilidade
+  const registrations = [...roster.confirmed, ...roster.waitlist];
   const results = db
     .prepare(
       `SELECT r.*, p.name, p.nickname, p.suit, p.color
@@ -74,10 +120,10 @@ router.get('/:id', (req, res) => {
         WHERE r.tournament_id = ? ORDER BY r.position ASC`
     )
     .all(req.params.id);
-  res.json({ tournament: t, registrations, results });
+  res.json({ tournament: t, registrations, roster, results });
 });
 
-// Inscrição do jogador logado
+// Inscrição do jogador logado. Se o torneio estiver lotado, entra na lista de espera.
 router.post('/:id/register', requireAuth, (req, res) => {
   const t = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(req.params.id);
   if (!t) return res.status(404).json({ error: 'Torneio não encontrado' });
@@ -90,14 +136,21 @@ router.post('/:id/register', requireAuth, (req, res) => {
   } catch {
     return res.status(409).json({ error: 'Você já está inscrito' });
   }
-  res.status(201).json({ ok: true });
+  const roster = buildRoster(t.id, t.seats);
+  const me = playerRosterStatus(roster, req.user.id);
+  res.status(201).json({ ok: true, ...me, roster });
 });
 
+// Cancela a inscrição. Promove automaticamente o primeiro da lista de espera
+// (a promoção é implícita: o status é recalculado pela ordem na próxima leitura).
 router.delete('/:id/register', requireAuth, (req, res) => {
+  const t = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'Torneio não encontrado' });
   db.prepare(
     'DELETE FROM registrations WHERE tournament_id = ? AND player_id = ?'
   ).run(req.params.id, req.user.id);
-  res.json({ ok: true });
+  const roster = buildRoster(t.id, t.seats);
+  res.json({ ok: true, roster });
 });
 
 // --- Organizador: criar / editar torneios ---

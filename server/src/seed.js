@@ -57,8 +57,8 @@ function seed() {
   );
 
   const insT = db.prepare(
-    `INSERT INTO tournaments (season_id, number, name, modality, date, buy_in, starting_stack, blind_structure, status)
-     VALUES (?, ?, ?, 'Texas Hold''em', ?, ?, ?, ?, ?)`
+    `INSERT INTO tournaments (season_id, number, name, modality, date, buy_in, starting_stack, blind_structure, seats, status)
+     VALUES (?, ?, ?, 'Texas Hold''em', ?, ?, ?, ?, ?, ?)`
   );
   const insR = db.prepare(
     `INSERT INTO results (tournament_id, player_id, position, prize, points, bounties)
@@ -72,7 +72,7 @@ function seed() {
   ];
 
   for (const t of finished) {
-    const tid = Number(insT.run(seasonId, t.number, t.name, t.date, t.buy_in, 20000, '20min / nível', 'finished').lastInsertRowid);
+    const tid = Number(insT.run(seasonId, t.number, t.name, t.date, t.buy_in, 20000, '20min / nível', null, 'finished').lastInsertRowid);
     t.order.forEach((pi, idx) => {
       const position = idx + 1;
       const prize = t.prizes[idx] || 0;
@@ -84,8 +84,9 @@ function seed() {
 
   // Próximo torneio agendado, com inscrições
   const nextId = Number(
-    insT.run(seasonId, 3, 'Mini Torneio #3', '2026-07-12T20:00:00', 50, 20000, '20min / nível', 'scheduled').lastInsertRowid
+    insT.run(seasonId, 3, 'Mini Torneio #3', '2026-07-12T20:00:00', 50, 20000, '20min / nível', 3, 'scheduled').lastInsertRowid
   );
+  // 3 vagas, 4 inscritos -> o último entra na lista de espera (demo do recurso)
   const insReg = db.prepare('INSERT INTO registrations (tournament_id, player_id) VALUES (?, ?)');
   for (const pid of playerIds.slice(0, 4)) insReg.run(nextId, pid);
 

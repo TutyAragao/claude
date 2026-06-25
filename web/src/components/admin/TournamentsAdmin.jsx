@@ -9,6 +9,7 @@ const BLANK = {
   buy_in: '',
   starting_stack: '',
   blind_structure: '',
+  seats: '',
 };
 
 // Criar e listar torneios.
@@ -41,6 +42,7 @@ export default function TournamentsAdmin() {
         buy_in: form.buy_in ? Number(form.buy_in) : 0,
         starting_stack: form.starting_stack ? Number(form.starting_stack) : 0,
         blind_structure: form.blind_structure || null,
+        seats: form.seats ? Number(form.seats) : null,
         season_id: season?.id || null,
         status: 'scheduled',
       });
@@ -88,9 +90,15 @@ export default function TournamentsAdmin() {
             <input className="input" type="number" value={form.starting_stack} onChange={set('starting_stack')} />
           </div>
         </div>
-        <div>
-          <label className="label">Estrutura de blinds</label>
-          <input className="input" placeholder="20min / nível" value={form.blind_structure} onChange={set('blind_structure')} />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Estrutura de blinds</label>
+            <input className="input" placeholder="20min / nível" value={form.blind_structure} onChange={set('blind_structure')} />
+          </div>
+          <div>
+            <label className="label">Vagas (lotação)</label>
+            <input className="input" type="number" min="0" placeholder="ilimitado" value={form.seats} onChange={set('seats')} />
+          </div>
         </div>
         {msg && <p className="text-sm text-purple-light">{msg}</p>}
         <button className="btn-primary" disabled={busy}>

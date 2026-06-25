@@ -8,6 +8,7 @@ import Ranking from './pages/Ranking.jsx';
 import Lobby from './pages/Lobby.jsx';
 import EditProfile from './pages/EditProfile.jsx';
 import PlayerProfile from './pages/PlayerProfile.jsx';
+import Players from './pages/Players.jsx';
 import Admin from './pages/Admin.jsx';
 
 function Protected({ children, organizer }) {
@@ -48,6 +49,7 @@ export default function App() {
               />
               <Route path="/ranking" element={<Ranking />} />
               <Route path="/torneios" element={<Lobby />} />
+              <Route path="/jogadores" element={<Players />} />
               <Route path="/jogador/:id" element={<PlayerProfile />} />
               <Route
                 path="/perfil/editar"

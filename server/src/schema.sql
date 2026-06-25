@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS players (
   -- perfil personalizável
   name          TEXT NOT NULL,
   nickname      TEXT,                              -- apelido de mesa
-  avatar_url    TEXT,
+  avatar_url    TEXT,                              -- URL de imagem personalizada
+  avatar        TEXT,                              -- avatar-personagem (ex.: macaco-mafioso)
   suit          TEXT DEFAULT 'spade',              -- spade|heart|diamond|club
   color         TEXT DEFAULT '#9D4EDD',            -- cor de destaque
   phrase        TEXT,                              -- frase de mesa
@@ -82,6 +83,20 @@ CREATE TABLE IF NOT EXISTS results (
 CREATE INDEX IF NOT EXISTS idx_results_tournament ON results(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_results_player ON results(player_id);
 CREATE INDEX IF NOT EXISTS idx_tournaments_season ON tournaments(season_id);
+
+-- Amizades (rede social do clube). Uma linha por relação; aceita nos dois sentidos.
+CREATE TABLE IF NOT EXISTS friendships (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  requester_id  INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  addressee_id  INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  status        TEXT NOT NULL DEFAULT 'pending',   -- pending|accepted
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  responded_at  TEXT,
+  UNIQUE (requester_id, addressee_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_friend_requester ON friendships(requester_id);
+CREATE INDEX IF NOT EXISTS idx_friend_addressee ON friendships(addressee_id);
 
 -- Ranking NÃO é tabela: é derivado da soma de pontos por jogador na temporada.
 -- Ver server/src/routes/ranking.js

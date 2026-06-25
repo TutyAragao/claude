@@ -10,21 +10,23 @@ export default function Home() {
   const { player } = useAuth();
   const [data, setData] = useState(null);
   const [nextT, setNextT] = useState(null);
+  const [requests, setRequests] = useState(0);
 
   useEffect(() => {
     if (!player) return;
     api.get(`/players/${player.id}`).then(setData).catch(() => {});
     api.get('/tournaments/next').then(setNextT).catch(() => {});
+    api.get('/friends/requests').then((r) => setRequests(r.length)).catch(() => {});
   }, [player]);
 
   if (!data) return <p className="text-zinc-500">Carregando perfil…</p>;
-  const { stats, badges, history } = data;
+  const { stats, badges, history, friendCount } = data;
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row gap-8 items-start">
         <div className="shrink-0 mx-auto md:mx-0">
-          <PlayerCard player={data.player} stats={stats} badges={badges} />
+          <PlayerCard player={data.player} stats={stats} badges={badges} friendCount={friendCount} />
           <Link to="/perfil/editar" className="btn-ghost w-full mt-3 text-sm">
             Personalizar perfil
           </Link>
@@ -41,6 +43,16 @@ export default function Home() {
                 : 'Jogue um torneio para entrar no ranking da temporada.'}
             </p>
           </div>
+
+          {requests > 0 && (
+            <Link
+              to="/jogadores"
+              className="block rounded-xl border border-purple/40 bg-purple/10 px-4 py-2.5 text-sm hover:bg-purple/20 transition"
+            >
+              🤝 Você tem {requests} pedido{requests === 1 ? '' : 's'} de amizade.{' '}
+              <span className="text-purple-light font-medium">Ver →</span>
+            </Link>
+          )}
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatTile label="Pontos" value={stats.points} accent={data.player.color} />

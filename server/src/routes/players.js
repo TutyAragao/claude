@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import db from '../db.js';
-import { requireAuth } from '../auth.js';
+import { requireAuth, optionalAuth } from '../auth.js';
 import { publicPlayer, playerStats, playerBadges } from '../stats.js';
+import { friendsOf, friendCount, relationship } from '../social.js';
 
 const router = Router();
 
@@ -20,8 +21,8 @@ router.get('/', (_req, res) => {
   res.json(rows.map(publicPlayer));
 });
 
-// Perfil completo de um jogador, com estatísticas e badges da temporada vigente.
-router.get('/:id', (req, res) => {
+// Perfil completo (público) de um jogador: estatísticas, badges e rede social.
+router.get('/:id', optionalAuth, (req, res) => {
   const row = db.prepare('SELECT * FROM players WHERE id = ?').get(req.params.id);
   if (!row) return res.status(404).json({ error: 'Jogador não encontrado' });
   const seasonId = activeSeasonId();
@@ -31,6 +32,10 @@ router.get('/:id', (req, res) => {
     allTimeStats: playerStats(row.id, null),
     badges: playerBadges(row.id, null),
     history: tournamentHistory(row.id),
+    friends: friendsOf(row.id),
+    friendCount: friendCount(row.id),
+    // relação do visitante logado com este perfil (none/friends/outgoing/incoming/self)
+    relationship: req.user ? relationship(req.user.id, row.id) : null,
   });
 });
 
@@ -48,7 +53,7 @@ function tournamentHistory(playerId) {
     .all(playerId);
 }
 
-const EDITABLE = ['name', 'nickname', 'avatar_url', 'suit', 'color', 'phrase', 'bio'];
+const EDITABLE = ['name', 'nickname', 'avatar_url', 'avatar', 'suit', 'color', 'phrase', 'bio'];
 
 // Atualiza o próprio perfil
 router.put('/me', requireAuth, (req, res) => {

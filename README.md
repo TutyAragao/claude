@@ -21,6 +21,12 @@ Esta entrega cobre as **Fases 1 e 2** do roadmap da especificação:
     promoção é automática quando alguém cancela.
   - **Acesso antecipado VIP:** jogadores marcados como VIP podem se inscrever
     durante uma janela exclusiva, antes da abertura geral do torneio.
+- **Lado social:**
+  - **Amizades:** pedidos de amizade, aceitar/recusar, lista de amigos e
+    diretório de jogadores com busca.
+  - **Card de perfil público** com estatísticas, badges e rede de amigos.
+  - **Avatares-personagem** (ex.: 🐵 Macaco Mafioso, 🦈 Tubarão, 🃏 Coringa…)
+    ou URL de imagem personalizada.
 
 ## Stack
 

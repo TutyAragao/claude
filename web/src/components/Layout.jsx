@@ -5,6 +5,7 @@ const links = [
   { to: '/', label: 'Início', end: true },
   { to: '/ranking', label: 'Ranking' },
   { to: '/torneios', label: 'Torneios' },
+  { to: '/jogadores', label: 'Jogadores' },
 ];
 
 export default function Layout({ children }) {

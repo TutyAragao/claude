@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
 import PlayerCard from '../components/PlayerCard.jsx';
 import { SUIT_OPTIONS } from '../components/Suit.jsx';
+import { AVATARS } from '../avatars.js';
 
 const COLORS = ['#9D4EDD', '#7B2FBF', '#E5384B', '#3FA7FF', '#2ECC71', '#F1C40F', '#FF7F50', '#E84393'];
 
@@ -17,6 +18,7 @@ export default function EditProfile() {
     bio: player.bio || '',
     suit: player.suit || 'spade',
     color: player.color || '#9D4EDD',
+    avatar: player.avatar || '',
     avatar_url: player.avatar_url || '',
   });
   const [busy, setBusy] = useState(false);
@@ -70,7 +72,32 @@ export default function EditProfile() {
             onChange={(e) => set('bio', e.target.value)}
           />
         </Field>
-        <Field label="URL do avatar (opcional)">
+        <Field label="Avatar — escolha um personagem">
+          <div className="grid grid-cols-7 gap-2">
+            {AVATARS.map((a) => (
+              <button
+                type="button"
+                key={a.key}
+                title={a.name}
+                onClick={() => set('avatar', form.avatar === a.key ? '' : a.key)}
+                className={`aspect-square rounded-xl text-xl grid place-items-center border transition ${
+                  form.avatar === a.key && !form.avatar_url
+                    ? 'border-purple-light bg-purple/20 scale-105'
+                    : 'border-white/10 bg-black/40 hover:border-white/30'
+                }`}
+              >
+                {a.emoji}
+              </button>
+            ))}
+          </div>
+          {form.avatar && !form.avatar_url && (
+            <p className="text-xs text-zinc-500 mt-1.5">
+              {AVATARS.find((a) => a.key === form.avatar)?.name}
+            </p>
+          )}
+        </Field>
+
+        <Field label="…ou cole a URL de uma imagem (tem prioridade)">
           <input
             className="input"
             placeholder="https://…"

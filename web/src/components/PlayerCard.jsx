@@ -1,15 +1,10 @@
 import Suit from './Suit.jsx';
+import Avatar from './Avatar.jsx';
 
 // Card de jogador compartilhável — estilo carta colecionável.
 // Usa a cor de destaque do jogador no avatar e nas bordas.
-export default function PlayerCard({ player, stats, badges = [] }) {
+export default function PlayerCard({ player, stats, badges = [], friendCount }) {
   const color = player.color || '#9D4EDD';
-  const initials = (player.name || '?')
-    .split(' ')
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 
   return (
     <div
@@ -28,16 +23,7 @@ export default function PlayerCard({ player, stats, badges = [] }) {
 
         {/* avatar */}
         <div className="flex flex-col items-center gap-3">
-          <div
-            className="w-24 h-24 rounded-2xl grid place-items-center text-3xl font-display font-bold overflow-hidden"
-            style={{ background: `${color}22`, color, border: `2px solid ${color}` }}
-          >
-            {player.avatar_url ? (
-              <img src={player.avatar_url} alt={player.name} className="w-full h-full object-cover" />
-            ) : (
-              initials
-            )}
-          </div>
+          <Avatar player={player} size={96} rounded="rounded-2xl" />
           <div className="text-center">
             <h3 className="font-display text-lg font-semibold leading-tight">
               {player.name}
@@ -47,6 +33,11 @@ export default function PlayerCard({ player, stats, badges = [] }) {
             </h3>
             {player.phrase && (
               <p className="text-xs text-zinc-400 italic mt-1">“{player.phrase}”</p>
+            )}
+            {typeof friendCount === 'number' && (
+              <p className="text-[11px] text-zinc-500 mt-1.5">
+                🤝 {friendCount} amigo{friendCount === 1 ? '' : 's'}
+              </p>
             )}
           </div>
         </div>

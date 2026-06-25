@@ -62,9 +62,12 @@ function seed() {
      VALUES (?, ?, ?, 'Texas Hold''em', ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   const insR = db.prepare(
-    `INSERT INTO results (tournament_id, player_id, position, prize, points, bounties)
-     VALUES (?, ?, ?, ?, ?, ?)`
+    `INSERT INTO results (tournament_id, player_id, position, prize, points, bounties, stack_start, stack_end)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   );
+  // Stacks finais (bag de fim de noite) por posição — todos começam com 20.000.
+  const STACK_START = 20000;
+  const STACK_END = [45000, 28000, 15000, 8000, 4000];
 
   // Dois torneios finalizados + um agendado
   const finished = [
@@ -79,7 +82,7 @@ function seed() {
       const prize = t.prizes[idx] || 0;
       const bounties = position === 1 ? 2 : position === 2 ? 1 : 0;
       const points = pointsFor({ position, bounties }, DEFAULT_SCORING);
-      insR.run(tid, playerIds[pi], position, prize, points, bounties);
+      insR.run(tid, playerIds[pi], position, prize, points, bounties, STACK_START, STACK_END[idx] || 0);
     });
   }
 

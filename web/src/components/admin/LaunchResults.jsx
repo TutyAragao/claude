@@ -3,16 +3,16 @@ import { api } from '../../api.js';
 import { money } from '../../format.js';
 import { pointsFor } from '../../scoring.js';
 
-// Fluxo central (pós-jogo): o organizador monta o ranking final do torneio em
-// ordem (1º, 2º, 3º…). Os pontos são calculados pela tabela da temporada e
-// podem ser ajustados manualmente antes de salvar. Ao salvar, ranking e perfis
-// são recalculados.
+// Fluxo central (pós-jogo): o organizador registra, por jogador, o stack inicial
+// e final, e a colocação. Os pontos vêm da tabela da temporada (ajustáveis à mão).
+// Sem cronômetro de blinds — nada é controlado durante o jogo.
 export default function LaunchResults() {
   const [tournaments, setTournaments] = useState([]);
   const [players, setPlayers] = useState([]);
   const [tid, setTid] = useState('');
   const [scoring, setScoring] = useState(null);
-  // ranking row: { player_id, name, prize, bounties, points, pointsEdited }
+  const [startStack, setStartStack] = useState(0); // stack inicial padrão do torneio
+  // row: { player_id, name, prize, bounties, points, pointsEdited, stack_start, stack_end }
   const [ranking, setRanking] = useState([]);
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -27,6 +27,8 @@ export default function LaunchResults() {
     if (!tid) return;
     setMsg(null);
     const t = tournaments.find((x) => String(x.id) === String(tid));
+    const defStack = Number(t?.starting_stack || 0);
+    setStartStack(defStack);
     const seasonReq = t?.season_id
       ? api.get(`/seasons/${t.season_id}`)
       : api.get('/seasons/active');
@@ -42,6 +44,8 @@ export default function LaunchResults() {
             bounties: r.bounties,
             points: r.points,
             pointsEdited: false,
+            stack_start: r.stack_start,
+            stack_end: r.stack_end,
           }))
         );
       } else {
@@ -53,20 +57,20 @@ export default function LaunchResults() {
             bounties: 0,
             points: 0,
             pointsEdited: false,
+            stack_start: defStack,
+            stack_end: 0,
           }))
         );
       }
     });
   }, [tid]);
 
-  // Recalcula pontos automáticos (posição/bounties) para linhas não editadas.
   function withAutoPoints(rows, table = scoring) {
     return rows.map((r, i) =>
       r.pointsEdited ? r : { ...r, points: pointsFor(i + 1, Number(r.bounties) || 0, table) }
     );
   }
 
-  // Quando a tabela de pontuação carrega, aplica os pontos automáticos.
   useEffect(() => {
     setRanking((rows) => withAutoPoints(rows, scoring));
   }, [scoring]);
@@ -78,7 +82,8 @@ export default function LaunchResults() {
     setRanking((r) =>
       withAutoPoints([
         ...r,
-        { player_id: p.id, name: p.name, prize: 0, bounties: 0, points: 0, pointsEdited: false },
+        { player_id: p.id, name: p.name, prize: 0, bounties: 0, points: 0,
+          pointsEdited: false, stack_start: startStack, stack_end: 0 },
       ])
     );
   }
@@ -99,7 +104,6 @@ export default function LaunchResults() {
       withAutoPoints(r.map((row, idx) => (idx === i ? { ...row, [key]: value } : row)))
     );
   }
-  // Edição manual de pontos: trava a linha para não ser recalculada.
   function setPoints(i, value) {
     setRanking((r) =>
       r.map((row, idx) => (idx === i ? { ...row, points: value, pointsEdited: true } : row))
@@ -114,6 +118,14 @@ export default function LaunchResults() {
       }))
     );
   }
+  // Ordena a classificação pelo stack final (maior primeiro) e recalcula pontos.
+  function sortByFinalStack() {
+    setRanking((r) =>
+      withAutoPoints(
+        [...r].sort((a, b) => (Number(b.stack_end) || 0) - (Number(a.stack_end) || 0))
+      )
+    );
+  }
 
   async function submit() {
     setBusy(true);
@@ -126,6 +138,8 @@ export default function LaunchResults() {
           prize: Number(r.prize) || 0,
           bounties: Number(r.bounties) || 0,
           points: Number(r.points) || 0,
+          stack_start: Number(r.stack_start) || 0,
+          stack_end: Number(r.stack_end) || 0,
         })),
       };
       await api.post(`/admin/tournaments/${tid}/results`, payload);
@@ -158,88 +172,54 @@ export default function LaunchResults() {
 
       {tid && (
         <div className="grid lg:grid-cols-3 gap-5">
-          {/* Ranking final (ordenado) */}
           <div className="lg:col-span-2 card p-5">
             <div className="flex items-center justify-between mb-1">
-              <h3 className="font-display font-semibold">Ranking final</h3>
-              <span className="text-sm text-zinc-400">
-                {totalPoints} pts · {money(totalPrize)}
-              </span>
+              <h3 className="font-display font-semibold">Classificação e stacks</h3>
+              <span className="text-sm text-zinc-400">{totalPoints} pts · {money(totalPrize)}</span>
             </div>
-            <p className="text-xs text-zinc-500 mb-3">
-              Pontos calculados pela posição (tabela da temporada). Edite o campo de
-              pontos para ajustar manualmente.
-              {anyEdited && (
-                <button onClick={recalcAll} className="ml-2 text-purple-light hover:underline">
-                  recalcular automático
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 mb-3">
+              <span>Registre o stack inicial e final de cada jogador.</span>
+              {ranking.length > 1 && (
+                <button onClick={sortByFinalStack} className="text-purple-light hover:underline">
+                  ordenar por stack final ↓
                 </button>
               )}
-            </p>
+              {anyEdited && (
+                <button onClick={recalcAll} className="text-purple-light hover:underline">
+                  recalcular pontos
+                </button>
+              )}
+            </div>
 
             {ranking.length === 0 ? (
               <p className="text-sm text-zinc-500">
-                Adicione jogadores na ordem da eliminação (último eliminado = campeão).
+                Adicione jogadores (use “ordenar por stack final” para classificar pelo bag).
               </p>
             ) : (
-              <>
-                <div className="hidden sm:flex items-center gap-2 px-2 pb-1 text-[10px] uppercase tracking-wide text-zinc-500">
-                  <span className="w-8 text-center">Pos</span>
-                  <span className="flex-1">Jogador</span>
-                  <span className="w-24 text-center">Prêmio</span>
-                  <span className="w-16 text-center">KO</span>
-                  <span className="w-20 text-center">Pontos</span>
-                  <span className="w-14" />
-                </div>
-                <div className="space-y-2">
-                  {ranking.map((r, i) => (
-                    <div key={r.player_id} className="flex items-center gap-2 rounded-xl bg-black/30 p-2">
+              <div className="space-y-2">
+                {ranking.map((r, i) => (
+                  <div key={r.player_id} className="rounded-xl bg-black/30 p-3">
+                    <div className="flex items-center gap-2">
                       <span className="w-8 text-center font-display font-bold text-purple-light">
                         {i + 1}º
                       </span>
                       <span className="flex-1 font-medium truncate">{r.name}</span>
-                      <input
-                        className="input w-24 py-1.5 text-sm"
-                        type="number"
-                        min="0"
-                        placeholder="Prêmio"
-                        value={r.prize}
-                        onChange={(e) => setField(i, 'prize', e.target.value)}
-                      />
-                      <input
-                        className="input w-16 py-1.5 text-sm"
-                        type="number"
-                        min="0"
-                        placeholder="KO"
-                        title="Bounties"
-                        value={r.bounties}
-                        onChange={(e) => setField(i, 'bounties', e.target.value)}
-                      />
-                      <div className="relative w-20">
-                        <input
-                          className={`input w-20 py-1.5 text-sm text-center font-display ${
-                            r.pointsEdited ? 'ring-1 ring-purple-light/60' : ''
-                          }`}
-                          type="number"
-                          title={r.pointsEdited ? 'Pontos ajustados manualmente' : 'Pontos automáticos'}
-                          value={r.points}
-                          onChange={(e) => setPoints(i, e.target.value)}
-                        />
-                      </div>
                       <div className="flex flex-col">
-                        <button className="text-zinc-500 hover:text-white px-1" onClick={() => move(i, -1)}>
-                          ▲
-                        </button>
-                        <button className="text-zinc-500 hover:text-white px-1" onClick={() => move(i, 1)}>
-                          ▼
-                        </button>
+                        <button className="text-zinc-500 hover:text-white px-1 leading-none" onClick={() => move(i, -1)}>▲</button>
+                        <button className="text-zinc-500 hover:text-white px-1 leading-none" onClick={() => move(i, 1)}>▼</button>
                       </div>
-                      <button className="text-red-400/70 hover:text-red-400 px-2" onClick={() => remove(i)}>
-                        ✕
-                      </button>
+                      <button className="text-red-400/70 hover:text-red-400 px-2" onClick={() => remove(i)}>✕</button>
                     </div>
-                  ))}
-                </div>
-              </>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-2 pl-10">
+                      <Num label="Stack ini" value={r.stack_start} onChange={(v) => setField(i, 'stack_start', v)} />
+                      <Num label="Stack fim" value={r.stack_end} onChange={(v) => setField(i, 'stack_end', v)} />
+                      <Num label="Prêmio" value={r.prize} onChange={(v) => setField(i, 'prize', v)} />
+                      <Num label="KO" value={r.bounties} onChange={(v) => setField(i, 'bounties', v)} />
+                      <Num label="Pontos" value={r.points} onChange={(v) => setPoints(i, v)} highlight={r.pointsEdited} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
 
             {msg && (
@@ -248,20 +228,15 @@ export default function LaunchResults() {
               </p>
             )}
 
-            <button
-              className="btn-primary mt-4"
-              disabled={busy || ranking.length === 0}
-              onClick={submit}
-            >
+            <button className="btn-primary mt-4" disabled={busy || ranking.length === 0} onClick={submit}>
               {busy ? 'Salvando…' : 'Salvar e atualizar ranking'}
             </button>
           </div>
 
-          {/* Pool de jogadores */}
           <div className="card p-5">
             <h3 className="font-display font-semibold mb-3">Adicionar jogador</h3>
             {available.length === 0 ? (
-              <p className="text-sm text-zinc-500">Todos os jogadores já estão no ranking.</p>
+              <p className="text-sm text-zinc-500">Todos os jogadores já estão na lista.</p>
             ) : (
               <div className="space-y-1.5 max-h-96 overflow-auto">
                 {available.map((p) => (
@@ -280,5 +255,20 @@ export default function LaunchResults() {
         </div>
       )}
     </div>
+  );
+}
+
+function Num({ label, value, onChange, highlight }) {
+  return (
+    <label className="block">
+      <span className="block text-[10px] uppercase tracking-wide text-zinc-500 mb-0.5">{label}</span>
+      <input
+        className={`input w-full py-1.5 text-sm ${highlight ? 'ring-1 ring-purple-light/60' : ''}`}
+        type="number"
+        min="0"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
   );
 }

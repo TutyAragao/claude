@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
 import PlayerCard from '../components/PlayerCard.jsx';
 import StatTile from '../components/StatTile.jsx';
-import { money, roiText, dateText } from '../format.js';
+import { money, roiText, dateText, chips } from '../format.js';
 
 export default function Home() {
   const { player } = useAuth();
@@ -62,7 +62,11 @@ export default function Home() {
             <StatTile label="ITM" value={stats.itm} hint={`${(stats.itmRate * 100).toFixed(0)}% dos jogos`} />
             <StatTile label="ROI" value={roiText(stats.roi)} />
             <StatTile label="Maior prêmio" value={money(stats.maxPrize)} />
-            <StatTile label="Pos. média" value={stats.avgPosition ? stats.avgPosition.toFixed(1) : '—'} />
+            {stats.bestStack > 0 ? (
+              <StatTile label="Maior stack" value={chips(stats.bestStack)} />
+            ) : (
+              <StatTile label="Pos. média" value={stats.avgPosition ? stats.avgPosition.toFixed(1) : '—'} />
+            )}
           </div>
 
           {nextT && (

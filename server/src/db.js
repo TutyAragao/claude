@@ -29,5 +29,7 @@ ensureColumn('players', 'vip', 'vip INTEGER NOT NULL DEFAULT 0');
 ensureColumn('players', 'avatar', 'avatar TEXT');
 ensureColumn('tournaments', 'vip_opens_at', 'vip_opens_at TEXT');
 ensureColumn('tournaments', 'opens_at', 'opens_at TEXT');
+ensureColumn('results', 'stack_start', 'stack_start INTEGER NOT NULL DEFAULT 0');
+ensureColumn('results', 'stack_end', 'stack_end INTEGER NOT NULL DEFAULT 0');
 
 export default db;

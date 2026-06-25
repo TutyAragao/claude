@@ -32,7 +32,7 @@ export function playerStats(playerId, seasonId = null) {
 
   const rows = db
     .prepare(
-      `SELECT r.position, r.prize, r.points, r.bounties, t.buy_in
+      `SELECT r.position, r.prize, r.points, r.bounties, r.stack_start, r.stack_end, t.buy_in
          FROM results r
          JOIN tournaments t ON t.id = r.tournament_id
         WHERE r.player_id = ?${seasonFilter}`
@@ -52,6 +52,9 @@ export function playerStats(playerId, seasonId = null) {
   const points = rows.reduce((s, r) => s + r.points, 0);
   // ROI = (premiação - buy-ins) / buy-ins
   const roi = totalBuyIns > 0 ? (totalPrize - totalBuyIns) / totalBuyIns : null;
+  // Stacks: maior stack final e saldo de fichas (final - inicial somados)
+  const bestStack = rows.reduce((m, r) => Math.max(m, r.stack_end || 0), 0);
+  const netChips = rows.reduce((s, r) => s + ((r.stack_end || 0) - (r.stack_start || 0)), 0);
 
   return {
     played,
@@ -64,6 +67,8 @@ export function playerStats(playerId, seasonId = null) {
     avgPosition,
     bounties,
     points,
+    bestStack,
+    netChips,
     rankPosition: seasonId ? rankPosition(playerId, seasonId) : null,
   };
 }

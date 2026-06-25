@@ -6,7 +6,7 @@ import PlayerCard from '../components/PlayerCard.jsx';
 import StatTile from '../components/StatTile.jsx';
 import Avatar from '../components/Avatar.jsx';
 import FriendButton from '../components/FriendButton.jsx';
-import { money, roiText, dateText } from '../format.js';
+import { money, roiText, dateText, chips } from '../format.js';
 
 export default function PlayerProfile() {
   const { id } = useParams();
@@ -54,7 +54,11 @@ export default function PlayerProfile() {
             <StatTile label="ITM" value={stats.itm} />
             <StatTile label="ROI" value={roiText(stats.roi)} />
             <StatTile label="Maior prêmio" value={money(stats.maxPrize)} />
-            <StatTile label="Bounties" value={stats.bounties} />
+            {stats.bestStack > 0 ? (
+              <StatTile label="Maior stack" value={chips(stats.bestStack)} />
+            ) : (
+              <StatTile label="Bounties" value={stats.bounties} />
+            )}
           </div>
 
           {friends?.length > 0 && (
@@ -91,6 +95,9 @@ export default function PlayerProfile() {
                 </div>
                 <div className="flex items-center gap-6 text-sm">
                   <span className="text-zinc-400">{h.position}º lugar</span>
+                  {h.stack_end > 0 && (
+                    <span className="hidden sm:inline text-zinc-500">🪙 {chips(h.stack_end)}</span>
+                  )}
                   <span className="text-zinc-300">{money(h.prize)}</span>
                   <span className="font-display font-semibold text-purple-light">+{h.points} pts</span>
                 </div>

@@ -6,6 +6,11 @@ export function money(value) {
   }).format(value);
 }
 
+export function chips(value) {
+  if (value == null) return '—';
+  return new Intl.NumberFormat('pt-BR').format(value);
+}
+
 export function percent(value) {
   if (value == null) return '—';
   return `${(value * 100).toFixed(0)}%`;

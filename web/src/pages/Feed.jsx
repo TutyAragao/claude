@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
 import Avatar from '../components/Avatar.jsx';
-import { money, relativeTime } from '../format.js';
+import { money, chips, relativeTime } from '../format.js';
 
 // Feed de atividades do clube: quem ganhou, novos recordes e novas amizades.
 export default function Feed() {
@@ -67,6 +67,7 @@ const META = {
   first_win: { icon: '🌟', accent: '#9D4EDD' },
   record_prize: { icon: '💰', accent: '#2ECC71' },
   record_points: { icon: '🔥', accent: '#FF7F50' },
+  record_stack: { icon: '🪙', accent: '#F1C40F' },
   friendship: { icon: '🤝', accent: '#3FA7FF' },
 };
 
@@ -135,6 +136,13 @@ function Body({ e }) {
         <>
           <PlayerLink p={e.actor} /> cravou o <span className="text-orange-300">recorde de pontos</span> num torneio:{' '}
           <span className="font-semibold">{e.amount} pts</span> no <Tournament t={e.tournament} />
+        </>
+      );
+    case 'record_stack':
+      return (
+        <>
+          <PlayerLink p={e.actor} /> cravou o <span className="text-yellow-300">maior stack final</span> do clube:{' '}
+          <span className="font-semibold">{chips(e.amount)}</span> no <Tournament t={e.tournament} />
         </>
       );
     case 'friendship':

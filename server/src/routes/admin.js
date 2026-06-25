@@ -113,17 +113,19 @@ router.post('/tournaments/:id/results', (req, res) => {
       prize: Number(e.prize || 0),
       bounties,
       points,
+      stack_start: Number(e.stack_start || 0),
+      stack_end: Number(e.stack_end || 0),
     };
   });
 
   const tx = db.transaction(() => {
     db.prepare('DELETE FROM results WHERE tournament_id = ?').run(tournament.id);
     const ins = db.prepare(
-      `INSERT INTO results (tournament_id, player_id, position, prize, points, bounties)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO results (tournament_id, player_id, position, prize, points, bounties, stack_start, stack_end)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     );
     for (const r of normalized) {
-      ins.run(tournament.id, r.player_id, r.position, r.prize, r.points, r.bounties);
+      ins.run(tournament.id, r.player_id, r.position, r.prize, r.points, r.bounties, r.stack_start, r.stack_end);
     }
     db.prepare("UPDATE tournaments SET status = 'finished' WHERE id = ?").run(tournament.id);
   });

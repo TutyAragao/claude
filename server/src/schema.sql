@@ -77,6 +77,8 @@ CREATE TABLE IF NOT EXISTS results (
   prize         REAL NOT NULL DEFAULT 0,
   points        INTEGER NOT NULL DEFAULT 0,
   bounties      INTEGER NOT NULL DEFAULT 0,
+  stack_start   INTEGER NOT NULL DEFAULT 0,   -- fichas no início
+  stack_end     INTEGER NOT NULL DEFAULT 0,   -- fichas no fim (bag/chip count)
   UNIQUE (tournament_id, player_id)
 );
 

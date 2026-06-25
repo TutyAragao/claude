@@ -44,7 +44,7 @@ function tournamentHistory(playerId) {
   return db
     .prepare(
       `SELECT t.id, t.name, t.number, t.date, t.buy_in,
-              r.position, r.prize, r.points, r.bounties
+              r.position, r.prize, r.points, r.bounties, r.stack_start, r.stack_end
          FROM results r
          JOIN tournaments t ON t.id = r.tournament_id
         WHERE r.player_id = ?

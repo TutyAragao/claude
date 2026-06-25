@@ -16,7 +16,7 @@ export function buildFeed({ scope = 'all', viewerId = null, limit = 50 } = {}) {
   // --- Resultados (em ordem cronológica para detectar recordes) ---
   const rows = db
     .prepare(
-      `SELECT r.id AS result_id, r.player_id, r.position, r.prize, r.points,
+      `SELECT r.id AS result_id, r.player_id, r.position, r.prize, r.points, r.stack_end,
               t.id AS tid, t.name AS tname, t.date AS tdate,
               p.name, p.nickname, p.avatar, p.avatar_url, p.suit, p.color
          FROM results r
@@ -29,6 +29,7 @@ export function buildFeed({ scope = 'all', viewerId = null, limit = 50 } = {}) {
 
   let clubMaxPrize = 0;
   let clubMaxPoints = 0;
+  let clubMaxStack = 0;
   const hasWon = new Set();
 
   for (const r of rows) {
@@ -58,6 +59,18 @@ export function buildFeed({ scope = 'all', viewerId = null, limit = 50 } = {}) {
         actor,
         tournament,
         amount: r.points,
+      });
+    }
+    // Recorde de maior stack final (clube)
+    if (r.stack_end > 0 && r.stack_end > clubMaxStack) {
+      clubMaxStack = r.stack_end;
+      events.push({
+        id: `recstack-${r.result_id}`,
+        type: 'record_stack',
+        date,
+        actor,
+        tournament,
+        amount: r.stack_end,
       });
     }
     // Vitória / primeira vitória

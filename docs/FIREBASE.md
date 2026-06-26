@@ -1,70 +1,84 @@
-# Hospedar o River Club no Firebase Hosting
+# River Club no Firebase (nativo)
 
-> **Importante:** o Firebase Hosting serve **só o frontend** (site estático). A
-> **API** (Node/Express) precisa rodar à parte — o jeito mais simples é o
-> Render, que já está configurado no repo (ver [`DEPLOY.md`](./DEPLOY.md)).
->
-> Você **não precisa "adicionar um Web App"** no Firebase para hospedar: isso só
-> é necessário se o site usar o SDK do Firebase (Auth/Firestore), o que ainda
-> não é o caso. Para hospedar, basta o **Firebase Hosting**.
-
-## Visão geral
+Esta versão roda **100% no Firebase**, sem servidor próprio:
 
 ```
 [Firebase Hosting]  →  frontend (web/dist)
-        |
-        |  chamadas /api  ─────────►  [Render]  →  backend Node/Express + SQLite
+        │  /api/**  (rewrite)
+        ▼
+[Cloud Functions]   →  API Express  →  [Firestore]
 ```
 
-## Passo 1 — Suba o backend (uma vez)
+- **Frontend**: React buildado, servido pelo **Firebase Hosting**.
+- **Backend**: a API Express empacotada numa **Cloud Function** (`functions/`),
+  com o Firebase Hosting reescrevendo `/api/**` para ela.
+- **Banco**: **Firestore** (coleções `players`, `seasons`, `tournaments`,
+  `registrations`, `results`, `friendships`, `notifications`, `_counters`).
 
-Siga o [`DEPLOY.md`](./DEPLOY.md) (Render Blueprint). No final você terá uma URL,
-algo como `https://river-club.onrender.com`. Guarde-a.
+> O frontend é o mesmo da versão SQLite — a API mantém o mesmo contrato (inclui
+> IDs numéricos, preservados via contador em `_counters`).
 
-## Passo 2 — Configure o frontend para apontar ao backend
-
-Crie `web/.env` (copie de `web/.env.example`) com a URL do backend:
-
-```
-VITE_API_URL=https://river-club.onrender.com
-```
-
-## Passo 3 — Buildar e publicar no Firebase Hosting
+## Pré-requisitos
 
 ```bash
-# instale a CLI, se ainda não tiver
 npm install -g firebase-tools
 firebase login
-
-# associe ao SEU projeto (substitui o .firebaserc)
-firebase use --add        # escolha seu projeto e dê o alias "default"
-
-# build do frontend
-cd web && npm ci && npm run build && cd ..
-
-# publica
-firebase deploy --only hosting
 ```
 
-Pronto: o site abre na URL do Firebase Hosting
-(`https://SEU_PROJECT_ID.web.app`).
+E registre o projeto (substitui o `.firebaserc`):
 
-`firebase.json` e `.firebaserc` já estão no repo — só ajuste o `SEU_PROJECT_ID`
-no `.firebaserc` (ou use `firebase use --add`).
+```bash
+firebase use --add        # escolha seu projeto Firebase, alias "default"
+```
 
----
+> **Plano Blaze:** Cloud Functions exige o plano *Blaze* (pay-as-you-go). O
+> free-tier do Blaze costuma cobrir um home game com folga.
 
-## (Opcional) "Adicionar um Web App" — quando faz sentido
+## Rodar localmente (emuladores)
 
-Se você quiser de fato registrar um **Web App** no Firebase (Configurações do
-projeto → Seus apps → Web) e usar serviços do SDK, faz sentido quando formos
-para a versão **Firebase nativa**: trocar o backend por **Cloud Functions** e o
-banco por **Firestore** (ou **Firebase Auth** no lugar do JWT). Esse é um
-trabalho maior (reescrita do data layer) — se quiser seguir por aí, me avise que
-eu faço a migração e aí sim usamos o `firebaseConfig` do Web App.
+```bash
+cd functions && npm install && cd ..
+cd web && npm install && npm run build && cd ..
 
-## (Opcional) Tudo no Google: backend no Cloud Run
+# sobe Functions + Firestore + Hosting
+firebase emulators:start --only functions,firestore,hosting --project demo-river
 
-Dá para manter o frontend no Firebase Hosting e o backend no **Cloud Run**
-(roda o `Dockerfile` do repo). O Hosting pode até reescrever `/api/**` para o
-serviço do Cloud Run. Tem custo conforme uso e exige billing habilitado.
+# em outro terminal: popular o Firestore do emulador com dados de demo
+cd functions
+FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=demo-river npm run seed
+```
+
+Abra a URL do **Hosting** mostrada pelo emulador (ex.: http://localhost:5050).
+
+## Deploy
+
+```bash
+cd web && npm run build && cd ..       # gera web/dist
+firebase deploy                        # functions + hosting + regras do Firestore
+```
+
+Site no ar em `https://SEU_PROJECT_ID.web.app`.
+
+### Popular dados em produção (opcional)
+
+Para semear o Firestore real com os dados de demonstração, rode o seed apontando
+para o projeto (com credenciais de Admin / `GOOGLE_APPLICATION_CREDENTIALS`):
+
+```bash
+cd functions
+GCLOUD_PROJECT=SEU_PROJECT_ID node seed.js
+```
+
+> Em produção, considere remover/trocar as senhas de demonstração.
+
+## Segurança
+
+`firestore.rules` **nega todo acesso direto do cliente** — somente o backend
+(Admin SDK nas Functions) lê/escreve no Firestore. A autenticação continua via
+JWT próprio (defina `JWT_SECRET` nas variáveis da Function em produção).
+
+## Convivência com a versão SQLite
+
+A pasta `server/` (Express + SQLite, para Docker/Render) continua no repo e
+funcional. A versão Firebase vive em `functions/` — escolha um caminho conforme
+o deploy. Ambas expõem a mesma API e usam o mesmo frontend.

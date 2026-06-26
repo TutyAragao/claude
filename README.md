@@ -65,6 +65,12 @@ docker compose up --build      # http://localhost:4000 (SQLite em volume + seed)
 Há também um `render.yaml` para deploy 1-clique no Render (com disco
 persistente). Detalhes e a opção PostgreSQL em [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
+### Firebase (nativo)
+
+Há ainda uma versão **100% Firebase** — frontend no **Hosting**, API em **Cloud
+Functions** e banco no **Firestore** (pasta `functions/`). O frontend e o
+contrato da API são os mesmos. Passo a passo em [`docs/FIREBASE.md`](docs/FIREBASE.md).
+
 ## Como rodar
 
 Pré-requisitos: Node 18+.
